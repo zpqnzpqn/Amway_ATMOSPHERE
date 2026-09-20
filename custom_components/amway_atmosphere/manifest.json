@@ -1,12 +1,14 @@
 {
   "domain": "amway_atmosphere",
   "name": "Amway Atmosphere",
-  "version": "0.1.0",
-  "documentation": "https://github.com/zpqnzpqn/Amway_ATMOSPHERE",
-  "issue_tracker": "https://github.com/zpqnzpqn/Amway_ATMOSPHERE/issues",
-  "dependencies": [],
-  "codeowners": ["@zpqnzpqn"],
+  "codeowners": [
+    "@zpqnzpqn"
+  ],
   "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/zpqnzpqn/Amway_ATMOSPHERE",
+  "integration_type": "device",
   "iot_class": "cloud_polling",
-  "integration_type": "device"
+  "issue_tracker": "https://github.com/zpqnzpqn/Amway_ATMOSPHERE/issues",
+  "version": "0.1.0"
 }
