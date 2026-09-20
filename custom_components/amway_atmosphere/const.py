@@ -52,6 +52,10 @@ DEFAULT_SCOPES = (
 MODEL_SKY = "Sky"
 MODEL_MINI = "Mini"
 
+# Default Full Device Names (do not use app names)
+DEFAULT_NAME_SKY = "Atmosphere Sky™ Air Treatment System"
+DEFAULT_NAME_MINI = "Atmosphere Mini™ Air Treatment System"
+
 # Fan Preset Modes (Title Case as requested)
 PRESET_MODE_AUTO = "Auto"
 PRESET_MODE_NIGHT = "Night"

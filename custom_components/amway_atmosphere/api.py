@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import hmac
 import json
@@ -24,6 +24,8 @@ from .const import (
     CLIENT_SECRET,
     CONEX_BASE_URL,
     DEFAULT_COUNTRY,
+    DEFAULT_NAME_MINI,
+    DEFAULT_NAME_SKY,
     DEFAULT_SCOPES,
     AUTH_ENDPOINT,
     GLUU_AUTH_ENDPOINT,
@@ -132,17 +134,22 @@ class AtmosphereDeviceState:
 
     thing_id: str
     thing_type: str  # "Sky" or "Mini"
-    device_name: str
-    connected: bool
-    speed: int  # 0 = Off, 1..5 for Sky, 1..3 for Mini
-    dust_level: int  # 1..5
-    mode: Optional[int]
-    clean_air_val: Optional[int]
-    prefilter_life_left: Optional[int]  # 0..100%
-    hepa_life_left: Optional[int]  # 0..100%
-    carbon_life_left: Optional[int]  # 0..100% (Sky only)
-    child_lock: Optional[bool]
-    raw_shadow: Dict[str, Any]
+    device_name: str = ""
+    connected: bool = True
+    speed: int = 0  # 0 = Off, 1..5 for Sky, 1..3 for Mini
+    dust_level: int = 1  # 1..5
+    mode: Optional[int] = None
+    clean_air_val: Optional[int] = None
+    prefilter_life_left: Optional[int] = None  # 0..100%
+    hepa_life_left: Optional[int] = None  # 0..100%
+    carbon_life_left: Optional[int] = None  # 0..100% (Sky only)
+    child_lock: Optional[bool] = None
+    raw_shadow: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Ensure device_name is the official full model name."""
+        if not self.device_name:
+            self.device_name = DEFAULT_NAME_MINI if self.is_mini else DEFAULT_NAME_SKY
 
     @property
     def is_sky(self) -> bool:
@@ -357,11 +364,13 @@ class AmwayApiClient:
             thing_id = item.get("thingId", "")
             thing_type = item.get("thingType", MODEL_SKY)
 
-            info = item.get("info", {}) or {}
-            thing_info = info.get("thingInfo") or info.get("thing") or {}
-            device_name = (
-                thing_info.get("deviceName") or thing_info.get("name") or thing_id
-            )
+            # Do NOT use app names; determine official full device name by model type (Sky vs Mini)
+            type_lower = str(thing_type).lower()
+            if "mini" in type_lower:
+                device_name = DEFAULT_NAME_MINI
+            else:
+                device_name = DEFAULT_NAME_SKY
+
 
             # Parse Shadow
             shadow_obj = item.get("shadow", {}) or {}

@@ -18,6 +18,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import AtmosphereDeviceState
 from .const import (
+    DEFAULT_NAME_MINI,
+    DEFAULT_NAME_SKY,
     DOMAIN,
     MINI_NIGHT_MAX_SPEED,
     MINI_PRESET_MODES,
@@ -79,8 +81,12 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
     def device_info(self) -> DeviceInfo:
         """Return device registry information."""
         dev = self._device
-        device_name = dev.device_name if dev else self._thing_id
-        model_name = f"Atmosphere {dev.thing_type}" if dev else "Atmosphere Purifier"
+        device_name = (
+            dev.device_name
+            if (dev and dev.device_name)
+            else (DEFAULT_NAME_MINI if (dev and dev.is_mini) else DEFAULT_NAME_SKY)
+        )
+        model_name = "Atmosphere Sky" if (dev and dev.is_sky) else "Atmosphere Mini"
         return DeviceInfo(
             identifiers={(DOMAIN, self._thing_id)},
             name=device_name,

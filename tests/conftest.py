@@ -75,8 +75,9 @@ sys.modules["homeassistant.config_entries"] = config_entries_mod
 sys.modules["homeassistant.data_entry_flow"] = MagicMock()
 sys.modules["homeassistant.helpers"] = MagicMock()
 sys.modules["homeassistant.helpers.aiohttp_client"] = MagicMock()
-sys.modules["homeassistant.helpers.entity"] = MagicMock()
-sys.modules["homeassistant.helpers.entity.DeviceInfo"] = dict
+entity_mod = MagicMock()
+entity_mod.DeviceInfo = dict
+sys.modules["homeassistant.helpers.entity"] = entity_mod
 sys.modules["homeassistant.helpers.entity_platform"] = MagicMock()
 
 coord_mod = MagicMock()

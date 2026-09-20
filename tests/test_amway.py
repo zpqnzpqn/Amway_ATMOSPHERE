@@ -12,6 +12,8 @@ from custom_components.amway_atmosphere.api import (
 from custom_components.amway_atmosphere.config_flow import _extract_code
 from custom_components.amway_atmosphere.const import (
     AIR_QUALITY_LEVELS,
+    DEFAULT_NAME_MINI,
+    DEFAULT_NAME_SKY,
     MODEL_MINI,
     MODEL_SKY,
     PRESET_MODE_AUTO,
@@ -76,8 +78,66 @@ class TestAmwayAuth:
             assert len(devices) == 1
             assert devices[0].connected is True
             assert devices[0].speed == 2
+            # Verify official full name is used instead of app name
+            assert devices[0].device_name == DEFAULT_NAME_SKY
 
         asyncio.run(_run())
+
+    def test_official_device_full_names_from_api_and_entities(self):
+        """Test that device names ignore app name and strictly follow official model full name."""
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+        from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
+        from custom_components.amway_atmosphere.sensor import AmwayAirQualitySensor
+
+        async def _run():
+            mock_session = MagicMock()
+            mock_resp = AsyncMock()
+            mock_resp.status = 200
+            mock_resp.json = AsyncMock(return_value=[
+                {
+                    "thingId": "SKY_DEVICE_01",
+                    "thingType": "sky",
+                    "info": {"thingInfo": {"deviceName": "My Custom Sky Room"}},
+                    "shadow": {}
+                },
+                {
+                    "thingId": "MINI_DEVICE_02",
+                    "thingType": "sky-mini",
+                    "info": {"thingInfo": {"deviceName": "My Custom Mini Bedroom"}},
+                    "shadow": {}
+                }
+            ])
+            mock_session.request.return_value.__aenter__.return_value = mock_resp
+
+            client = AmwayApiClient(session=mock_session, access_token="mock_token")
+            devices = await client.async_get_devices()
+            assert len(devices) == 2
+
+            sky_dev = devices[0]
+            mini_dev = devices[1]
+
+            # 1. API device_name strictly follows official names
+            assert sky_dev.device_name == "Atmosphere Sky™ Air Treatment System"
+            assert mini_dev.device_name == "Atmosphere Mini™ Air Treatment System"
+
+            # 2. Fan and Sensor device_info name strictly match
+            coordinator = MagicMock()
+            coordinator.data = {sky_dev.thing_id: sky_dev, mini_dev.thing_id: mini_dev}
+
+            fan_sky = AmwayAtmosphereFan(coordinator, sky_dev.thing_id)
+            sensor_sky = AmwayAirQualitySensor(coordinator, sky_dev.thing_id)
+            assert fan_sky.device_info["name"] == "Atmosphere Sky™ Air Treatment System"
+            assert sensor_sky.device_info["name"] == "Atmosphere Sky™ Air Treatment System"
+
+            fan_mini = AmwayAtmosphereFan(coordinator, mini_dev.thing_id)
+            sensor_mini = AmwayAirQualitySensor(coordinator, mini_dev.thing_id)
+            assert fan_mini.device_info["name"] == "Atmosphere Mini™ Air Treatment System"
+            assert sensor_mini.device_info["name"] == "Atmosphere Mini™ Air Treatment System"
+
+        asyncio.run(_run())
+
 
 
 class TestAwsSigV4:
