@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Amway Atmosphere への接続",
+        "description": "以下のリンクをブラウザで開き、アムウェイアカウントにサインインしてください：\n\n[ここをクリックしてログイン]({auth_url})\n\nログイン完了後、ブラウザが `amwayhealthyhome://loginRedirect?code=...` で始まる URL にリダイレクトされます。\nリダイレクトされた URL 全体または `code` パラメータをコピーして、下に入力してください。",
+        "data": {
+          "auth_code": "認証コードまたはリダイレクトURL"
+        }
+      },
+      "reauth_confirm": {
+        "title": "アムウェイアカウントの再認証",
+        "description": "アムウェイのログインセッションの有効期限が切れました。以下のリンクから再認証を行ってください：\n\n[ここをクリックしてログイン]({auth_url})\n\n新しいリダイレクト URL または `code` を下に入力してください。",
+        "data": {
+          "auth_code": "認証コードまたはリダイレクトURL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "アムウェイサーバーへの接続またはトークン交換に失敗しました。",
+      "invalid_auth_code": "無効な認証コードまたは URL です。",
+      "unknown": "予期しないエラーが発生しました。"
+    },
+    "abort": {
+      "already_configured": "このアムウェイアカウントまたはデバイスは既に設定されています。",
+      "reauth_successful": "再認証が完了しました。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Amway Atmosphere オプション設定",
+        "data": {
+          "scan_interval": "更新間隔（秒）"
+        }
+      }
+    }
+  }
+}

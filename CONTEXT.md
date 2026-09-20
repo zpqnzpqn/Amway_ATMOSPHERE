@@ -44,9 +44,9 @@ _Avoid_: HA plugin, HA addon
 The Home Assistant integration exposing local entities to the Apple Home ecosystem as native HomeKit accessories.
 _Avoid_: Homebridge, Apple Home plugin
 
-**Taiwan Region**:
-The target regional cloud environment supporting Amway Taiwan account authentication and device binding.
-_Avoid_: Global Amway, US region
+**Supported Regions**:
+The integration connects to Amway Healthy Home cloud infrastructure, supporting Taiwan and Japan region accounts with primary verified testing on Taiwan accounts.
+_Avoid_: US legacy region, Atmosphere Connect region
 
 ### Entities & HomeKit Mapping
 
