@@ -156,8 +156,13 @@ class AmwayApiClient:
         self._aws_credentials_expires_at: Optional[datetime.datetime] = None
 
     @classmethod
-    def get_authorization_url(cls, state: str = "amway_ha") -> str:
+    def get_authorization_url(
+        cls, state: str = "amway_ha", country: str = "TW"
+    ) -> str:
         """Generate the OAuth2 browser URL for user login."""
+        market = country.upper()
+        clientapp = f"healthyhome{market}"
+        lng = "zh-TW" if market == "TW" else ("ja-JP" if market == "JP" else "en-US")
         params = {
             "client_id": CLIENT_ID,
             "response_type": "code",
@@ -165,6 +170,10 @@ class AmwayApiClient:
             "scope": DEFAULT_SCOPES,
             "state": state,
             "prompt": "login",
+            "clientapp": clientapp,
+            "amw_clientapp": clientapp,
+            "amw_lng": lng,
+            "cancelRedirect": "amwayhealthyhome://cancelLogin",
         }
         return f"{GLUU_AUTH_ENDPOINT}?{urllib.parse.urlencode(params)}"
 

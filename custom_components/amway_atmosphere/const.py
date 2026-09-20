@@ -12,9 +12,10 @@ CONF_SCAN_INTERVAL = "scan_interval"
 DEFAULT_SCAN_INTERVAL = 30  # seconds
 
 # OAuth2 & Amway Cloud Endpoints
-GLUU_AUTH_ENDPOINT = (
-    "https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/authorize"
+AUTH_ENDPOINT = (
+    "https://account2.amwayglobal.com/v1/proxy/oauth2/aus2ddwj0luvaUo641t7/v1/authorize"
 )
+GLUU_AUTH_ENDPOINT = AUTH_ENDPOINT
 GLUU_TOKEN_ENDPOINT = (
     "https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/token"
 )
