@@ -146,11 +146,12 @@ class AtmosphereDeviceState:
 
     @property
     def is_sky(self) -> bool:
-        return self.thing_type == MODEL_SKY
+        t = (self.thing_type or "").lower()
+        return t == "sky" or t == "neptune"
 
     @property
     def is_mini(self) -> bool:
-        return self.thing_type == MODEL_MINI
+        return "mini" in (self.thing_type or "").lower()
 
     @property
     def max_speed(self) -> int:

@@ -56,16 +56,27 @@ def get_local_ip() -> str:
 
 
 def print_banner(token: str) -> None:
-    """Print the captured token with clear Home Assistant instructions."""
+    """Print the captured token with clear Home Assistant instructions and copy to clipboard."""
+    import subprocess
+    copied_to_clipboard = False
+    try:
+        p = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE)
+        p.communicate(token.encode("utf-8"))
+        copied_to_clipboard = True
+    except Exception:
+        pass
+
     print("\n" + "=" * 70)
     print("🎉 恭喜！成功捕獲 Amway Conex Access Token！")
     print("=" * 70)
-    print("\n請複製以下 Access Token，並貼入 Home Assistant 設定精靈：\n")
+    if copied_to_clipboard:
+        print("📋 【已自動複製到剪貼簿】直接在 Home Assistant 貼上 (Cmd+V) 即可！\n")
+    print("若需手動複製，Token 如下：\n")
     print(token)
     print("\n" + "=" * 70)
     print("⚠️  安全提示：")
     print("1. 請妥善保管您的 Token，切勿公開或上傳至 GitHub。")
-    print("2. 若您剛才在手機上設置了 Wi-Fi 代理，請記得將手機 Wi-Fi 代理切換回「關閉」。")
+    print("2. 現在請將手機 Wi-Fi 代理切換回「關閉」。")
     print("=" * 70 + "\n")
 
 
@@ -251,23 +262,11 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    if args.proxy:
-        run_proxy_mode(args.port)
-    elif args.manual:
+    if args.manual:
         run_manual_mode()
     else:
-        # Default menu
-        print("\n請選擇 Token 獲取方式：")
-        print("  1. 📱 本地代理模式 (推薦手機 App 使用)")
-        print("  2. 🌐 瀏覽器手動模式")
-        print("  q. 離開")
-        choice = input("請輸入選項 (1/2/q): ").strip().lower()
-        if choice == "1":
-            run_proxy_mode(args.port)
-        elif choice == "2":
-            run_manual_mode()
-        else:
-            print("已離開。")
+        # Default directly to seamless proxy mode
+        run_proxy_mode(args.port)
 
 
 if __name__ == "__main__":
