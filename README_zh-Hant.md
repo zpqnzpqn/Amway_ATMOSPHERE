@@ -88,16 +88,27 @@
 
 1. 在 Home Assistant 中前往 **「設定」 $\rightarrow$ 「裝置與服務」 $\rightarrow$ 「新增整合」**。
 2. 搜尋並點選 **「Amway Atmosphere」**。
-3. 畫面彈出設定視窗，並顯示登入驗證連結：
-   - 點擊連結在瀏覽器開啟安麗官方登入頁面（支援安麗台灣帳號）。
-   - 登入完成後，瀏覽器會跳轉至類似下面的位址：
-     ```text
-     amwayhealthyhome://loginRedirect?code=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx&state=...
-     ```
-     *(此時瀏覽器提示找不到網頁或無法開啟應用程式為完全正常現象)*。
-   - 複製網址列的 **完整網址**（或其中的 `code` 數值）。
-   - 貼回 Home Assistant 的輸入框並點選 **「傳送」**。
-4. 整合元件將自動完成 Token 交換，並自動搜尋您帳號下綁定的所有 Atmosphere Sky 與 Mini 設備！
+3. 選擇您偏好的連線驗證方式：
+
+### 方式 A：直接輸入 Access Token（最推薦、零密碼風險）
+由於安麗官方 App 採用 AppAuth PKCE 機制，最穩定且不需儲存密碼的方式為使用 Access Token：
+1. 在您的電腦終端機執行輕量捕獲助手：
+   ```bash
+   python3 tools/get_token.py --proxy
+   ```
+2. 依照終端機顯示的指引操作：
+   - 將手機連線至相同 Wi-Fi，並在 Wi-Fi 設定中將 HTTP 代理設定為電腦的 IP。
+   - 打開手機上的 **Amway Healthy Home** App 並登入或操作開關。
+   - 助手偵測到 Token 後會立即印出並自動乾淨關閉代理。
+3. 將捕獲到的 **Access Token** 貼入 Home Assistant 設定精靈，點擊 **「傳送」** 即可！
+
+### 方式 B：輸入手機號碼與密碼直接登入
+在設定精靈中輸入安麗帳號註冊的手機號碼（支援 `09xxxxxxxx` 或 `+8869xxxxxxxx`）與密碼完成綁定。
+
+### 方式 C：瀏覽器手動換取授權碼
+執行 `python3 tools/get_token.py --manual`，在瀏覽器登入後將跳轉網址貼回自動換取 Token。
+
+4. 設定完成後，系統將自動搜尋並建立您名下所有的 Atmosphere Sky 與 Atmosphere Mini 清淨機實體！
 
 ---
 

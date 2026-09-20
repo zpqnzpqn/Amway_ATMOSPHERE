@@ -38,12 +38,19 @@ async def async_setup_entry(
 ) -> None:
     """Set up Amway Atmosphere fan entities from a config entry."""
     coordinator: AmwayAtmosphereCoordinator = hass.data[DOMAIN][entry.entry_id]
+    known_thing_ids = set()
 
-    entities = [
-        AmwayAtmosphereFan(coordinator, thing_id)
-        for thing_id in coordinator.data
-    ]
-    async_add_entities(entities)
+    def _discover_new_entities() -> None:
+        new_entities = []
+        for thing_id in coordinator.data:
+            if thing_id not in known_thing_ids:
+                known_thing_ids.add(thing_id)
+                new_entities.append(AmwayAtmosphereFan(coordinator, thing_id))
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _discover_new_entities()
+    entry.async_on_unload(coordinator.async_add_listener(_discover_new_entities))
 
 
 class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntity):

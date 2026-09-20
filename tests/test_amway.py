@@ -338,4 +338,169 @@ class TestAmwayConfigFlow:
         code3 = "  12345678-aaaa-bbbb-cccc-dddddddddddd  "
         assert _extract_code(code3) == "12345678-aaaa-bbbb-cccc-dddddddddddd"
 
+    def test_normalize_username(self):
+        from custom_components.amway_atmosphere.api import normalize_username
+
+        # Taiwan phone number variations
+        assert normalize_username("0912345678", "TW") == "+886912345678"
+        assert normalize_username("0912-345-678", "TW") == "+886912345678"
+        assert normalize_username("  0912 345 678  ", "TW") == "+886912345678"
+        assert normalize_username("912345678", "TW") == "+886912345678"
+        assert normalize_username("886912345678", "TW") == "+886912345678"
+        assert normalize_username("+886912345678", "TW") == "+886912345678"
+
+        # Other markets or emails unchanged
+        assert normalize_username("test@example.com", "TW") == "test@example.com"
+        assert normalize_username("0801234567", "JP") == "0801234567"
+
+
+class TestDirectAuthClient:
+    """Test direct login and credential retrieval."""
+
+    def test_direct_login_request_generation(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+
+        async def _run():
+            mock_session = MagicMock()
+            mock_resp = AsyncMock()
+            mock_resp.status = 200
+            mock_resp.json = AsyncMock(
+                return_value={
+                    "session_token": "mock-jwt-token-123",
+                    "gluuUser": {"profile": {"partyId": "12345678"}},
+                }
+            )
+            mock_session.post.return_value.__aenter__.return_value = mock_resp
+
+            result = await AmwayApiClient.async_login_with_password(
+                mock_session, "0912345678", "secret123", country="TW"
+            )
+
+            assert result["access_token"] == "mock-jwt-token-123"
+            assert result["username"] == "+886912345678"
+            assert result["party_id"] == "12345678"
+
+            mock_session.post.assert_called_once()
+            call_args = mock_session.post.call_args
+            assert "https://account2.amwayglobal.com/v1/token" in call_args[0]
+            headers = call_args[1]["headers"]
+            assert headers["x-amw-clientapp"] == "healthyhomeTW"
+            assert "j" in headers
+            body = call_args[1]["json"]
+            assert body["username"] == "+886912345678"
+
+        asyncio.run(_run())
+
+    def test_get_devices_passes_required_query_params(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+
+        async def _run():
+            mock_session = MagicMock()
+            mock_resp = AsyncMock()
+            mock_resp.status = 200
+            mock_resp.json = AsyncMock(return_value=[])
+            mock_session.request.return_value.__aenter__.return_value = mock_resp
+
+            client = AmwayApiClient(mock_session, access_token="test-token")
+            devices = await client.async_get_devices()
+            assert devices == []
+
+            call_args = mock_session.request.call_args
+            assert call_args[1]["params"]["thingType"] == "sky,neptune,sky-mini"
+            assert call_args[1]["params"]["info"] == "true"
+            assert call_args[1]["params"]["shadow"] == "true"
+
+        asyncio.run(_run())
+
+    def test_send_remote_button_reads_secret_access_key(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+
+        async def _run():
+            mock_session = MagicMock()
+
+            # Mock get_aws_credentials
+            cred_resp = AsyncMock()
+            cred_resp.status = 200
+            cred_resp.json = AsyncMock(
+                return_value={
+                    "Credentials": {
+                        "AccessKeyId": "ASIAKEY123",
+                        "SecretAccessKey": "SECRET456",
+                        "SessionToken": "TOKEN789",
+                        "Expiration": "2026-09-21T00:00:00Z",
+                    }
+                }
+            )
+
+            # Mock shadow update post
+            shadow_resp = AsyncMock()
+            shadow_resp.status = 200
+
+            async def _mock_request(method, url, **kwargs):
+                if "credentials" in url:
+                    return cred_resp
+                return shadow_resp
+
+            mock_session.request.return_value.__aenter__.side_effect = lambda: cred_resp
+            mock_session.post.return_value.__aenter__.return_value = shadow_resp
+
+            client = AmwayApiClient(mock_session, access_token="test-token")
+            await client.async_send_remote_button("test-sky-01", "Power")
+
+            mock_session.post.assert_called_once()
+            call_args = mock_session.post.call_args
+            assert "https://axnk9oqlqxcqh-ats.iot.us-east-1.amazonaws.com/things/test-sky-01/shadow" in call_args[0]
+            headers = call_args[1]["headers"]
+            assert "AWS4-HMAC-SHA256" in headers["authorization"]
+
+        asyncio.run(_run())
+
+    def test_direct_access_token_config_flow(self):
+        """Test config flow when user provides Access Token directly."""
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+        from custom_components.amway_atmosphere.config_flow import AmwayAtmosphereConfigFlow
+        from custom_components.amway_atmosphere.const import CONF_ACCESS_TOKEN
+
+        async def _run():
+            flow = AmwayAtmosphereConfigFlow()
+            flow.hass = MagicMock()
+
+            mock_device = MagicMock()
+            mock_device.thing_id = "test-device-id"
+            mock_device.device_name = "Living Room Purifier"
+
+            with patch.object(
+                AmwayApiClient,
+                "async_get_devices",
+                new=AsyncMock(return_value=[mock_device]),
+            ):
+                try:
+                    result = await flow.async_step_user(
+                        {CONF_ACCESS_TOKEN: "valid-amway-access-token"}
+                    )
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    raise e
+                assert result["type"] == "create_entry"
+                assert result["title"] == "Amway Atmosphere (Living Room Purifier)"
+                assert result["data"][CONF_ACCESS_TOKEN] == "valid-amway-access-token"
+
+        asyncio.run(_run())
+
+    def test_get_token_helpers(self):
+        """Test standalone tools/get_token.py helper functions."""
+        from tools.get_token import get_local_ip
+
+        ip = get_local_ip()
+        assert isinstance(ip, str)
+        assert len(ip.split(".")) == 4
 

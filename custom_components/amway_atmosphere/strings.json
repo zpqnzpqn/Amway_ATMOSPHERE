@@ -3,22 +3,36 @@
     "step": {
       "user": {
         "title": "Connect to Amway Atmosphere",
-        "description": "Please open the following link in your browser to sign in to your Amway account:\n\n[Click here to log in]({auth_url})\n\nAfter logging in, your browser will redirect to a URL starting with `amwayhealthyhome://loginRedirect?code=...`.\n(If your browser displays a prompt saying no application can open this link or shows a blank page, this is expected).\nPlease copy the entire URL from the browser address bar (or the `code` parameter value) and paste it below:",
+        "description": "Choose either method to connect:\n1. (Recommended) Enter your captured **Access Token** (use `python3 tools/get_token.py`).\n2. Or enter your **Phone Number** and **Password**.",
+        "data": {
+          "access_token": "Amway Conex Access Token (Recommended)",
+          "username": "Phone Number (e.g. 09xxxxxxxx)",
+          "password": "Password",
+          "country": "Country / Market Code (TW, US, JP, etc.)"
+        }
+      },
+      "manual_code": {
+        "title": "Manual Authorization Code",
+        "description": "Please open the link to log in and paste the callback URL or code:\n\n[Click here to log in]({auth_url})",
         "data": {
           "auth_code": "Authorization Code or Callback URL"
         }
       },
       "reauth_confirm": {
         "title": "Re-authenticate Amway Account",
-        "description": "Your Amway login session has expired. Please re-authenticate using the link:\n\n[Click here to log in]({auth_url})\n\nPaste the new redirect URL or `code` below.",
+        "description": "Please enter your password or updated token to re-authenticate account {username}.",
         "data": {
-          "auth_code": "Authorization Code or Callback URL"
+          "password": "Password"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect or exchange tokens with Amway servers.",
+      "cannot_connect": "Failed to connect to Amway servers.",
+      "invalid_auth": "Invalid Access Token, phone number, or password.",
       "invalid_auth_code": "Invalid authorization code or URL.",
+      "invalid_username": "Please enter a valid phone number.",
+      "invalid_password": "Password cannot be empty.",
+      "missing_credentials_or_token": "Please provide either an Access Token or a Phone Number with Password.",
       "unknown": "An unexpected error occurred."
     },
     "abort": {

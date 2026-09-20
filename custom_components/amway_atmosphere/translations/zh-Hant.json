@@ -2,36 +2,50 @@
   "config": {
     "step": {
       "user": {
-        "title": "連結安麗逸新空氣清淨機 (Amway Atmosphere)",
-        "description": "請在瀏覽器中開啟以下網址進行安麗帳號登入：\n\n[點此開啟安麗登入頁面]({auth_url})\n\n登入完成後，瀏覽器網址列會跳轉為以 `amwayhealthyhome://loginRedirect?code=...` 開頭的網址（若瀏覽器提示找不到應用程式或頁面空白屬正常現象）。\n請將瀏覽器網址列的完整網址（或其中的 `code` 代碼）複製並貼在下方：",
+        "title": "連線至安麗逸新空氣清淨機 (Amway Atmosphere)",
+        "description": "您可以選擇以下任一種方式進行連線：\n1. **（推薦）直接輸入 Access Token**：請使用小工具 `python3 tools/get_token.py` 取得後貼上。\n2. **或輸入手機號碼與密碼**：支援台灣手機號（如 09xxxxxxxx 或 +8869xxxxxxxx）。",
         "data": {
-          "auth_code": "授權碼 (Code) 或 回調網址"
+          "access_token": "Amway Conex Access Token（推薦）",
+          "username": "手機號碼或帳號",
+          "password": "密碼",
+          "country": "國家 / 地區代碼（TW、US、JP 等）"
+        }
+      },
+      "manual_code": {
+        "title": "手動輸入授權碼",
+        "description": "請點擊下方鏈結進行登入，並貼上跳轉後的網址或代碼：\n\n[點此開啟安麗官方登入頁]({auth_url})",
+        "data": {
+          "auth_code": "授權碼 (Code) 或跳轉網址"
         }
       },
       "reauth_confirm": {
         "title": "重新認證安麗帳號",
-        "description": "您的安麗登入憑證已過期，請點擊下方連結重新登入：\n\n[點此開啟安麗登入頁面]({auth_url})\n\n並將新的回調網址或 `code` 貼在下方：",
+        "description": "請輸入帳號 {username} 的最新密碼或更新的 Token 進行重新驗證。",
         "data": {
-          "auth_code": "授權碼 (Code) 或 回調網址"
+          "password": "密碼"
         }
       }
     },
     "error": {
-      "cannot_connect": "無法連線至安麗伺服器或換取憑證失敗，請檢查網路或授權碼。",
-      "invalid_auth_code": "無效的授權碼或回調網址格式。",
+      "cannot_connect": "無法連線至安麗雲端伺服器。",
+      "invalid_auth": "無效的 Access Token、手機號碼或密碼。",
+      "invalid_auth_code": "無效的授權碼或回呼網址。",
+      "invalid_username": "請輸入正確的手機號碼。",
+      "invalid_password": "密碼不能為空。",
+      "missing_credentials_or_token": "請輸入 Access Token 或輸入手機號碼與密碼。",
       "unknown": "發生未預期的錯誤。"
     },
     "abort": {
-      "already_configured": "此安麗帳號或設備已經設定過了。",
-      "reauth_successful": "重新認證成功！"
+      "already_configured": "此安麗帳號或設備已完成設定。",
+      "reauth_successful": "重新驗證成功。"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Amway Atmosphere 設定選項",
+        "title": "Amway Atmosphere 選項設定",
         "data": {
-          "scan_interval": "雲端狀態輪詢間隔 (秒)"
+          "scan_interval": "狀態更新間隔（秒）"
         }
       }
     }

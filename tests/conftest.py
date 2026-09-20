@@ -44,11 +44,34 @@ class MockSensorEntity(MockGeneric, MockEntity):
     pass
 
 
+class MockConfigFlow:
+    def __init_subclass__(cls, **kwargs):
+        pass
+
+    async def async_set_unique_id(self, unique_id, **kwargs):
+        pass
+
+    def _abort_if_unique_id_configured(self):
+        pass
+
+    def async_create_entry(self, title, data):
+        return {"type": "create_entry", "title": title, "data": data}
+
+    def async_show_form(self, step_id, data_schema=None, errors=None, description_placeholders=None):
+        return {"type": "form", "step_id": step_id, "errors": errors}
+
+    def async_abort(self, reason):
+        return {"type": "abort", "reason": reason}
+
+
 # Home Assistant submodules
 ha = MagicMock()
 sys.modules["homeassistant"] = ha
 sys.modules["homeassistant.core"] = MagicMock()
-sys.modules["homeassistant.config_entries"] = MagicMock()
+config_entries_mod = MagicMock()
+config_entries_mod.ConfigFlow = MockConfigFlow
+ha.config_entries = config_entries_mod
+sys.modules["homeassistant.config_entries"] = config_entries_mod
 sys.modules["homeassistant.data_entry_flow"] = MagicMock()
 sys.modules["homeassistant.helpers"] = MagicMock()
 sys.modules["homeassistant.helpers.aiohttp_client"] = MagicMock()

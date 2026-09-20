@@ -88,17 +88,27 @@ When synced to Apple Home via Home Assistant's **HomeKit Bridge**, the purifier 
 
 1. In Home Assistant, go to **Settings** $\rightarrow$ **Devices & Services** $\rightarrow$ **Add Integration**.
 2. Search for and select **Amway Atmosphere**.
-3. A login link will appear on the setup screen:
-   - Click the link to open the official Amway ID authentication portal in your web browser.
-   - Log in with your Amway account.
-   - After authentication, the browser will attempt to redirect to an address starting with:
-     ```text
-     amwayhealthyhome://loginRedirect?code=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx&state=...
-     ```
-     *(It is completely normal if your browser displays a "Page Not Found" or "Cannot open application" message).*
-   - Copy the **entire redirect URL** (or just the `code` parameter value) from your browser's address bar.
-   - Paste it into the Home Assistant prompt and click **Submit**.
-4. The integration will automatically discover and configure all Atmosphere Sky and Atmosphere Mini units linked to your account!
+3. Choose your preferred connection method:
+
+### Method A: Direct Access Token (Recommended)
+Because official mobile apps utilize AppAuth PKCE, the most stable and password-safe method is using an Access Token:
+1. Run the standalone helper tool on your computer:
+   ```bash
+   python3 tools/get_token.py --proxy
+   ```
+2. Follow the on-screen instructions:
+   - Connect your smartphone to the same Wi-Fi and set the HTTP proxy to your computer's IP.
+   - Open the **Amway Healthy Home** app and log in or toggle device power.
+   - The tool will automatically capture and display your token, then shut down cleanly.
+3. Paste the captured **Access Token** into Home Assistant setup wizard and click **Submit**.
+
+### Method B: Phone Number & Password
+Enter your registered phone number (e.g., `09xxxxxxxx` or `+8869xxxxxxxx`) and password to connect directly.
+
+### Method C: Browser Manual Code
+Use `python3 tools/get_token.py --manual` to authenticate via your web browser and exchange authorization codes.
+
+4. Once configured, all Atmosphere Sky and Atmosphere Mini purifiers linked to your Amway account will be discovered automatically!
 
 ---
 

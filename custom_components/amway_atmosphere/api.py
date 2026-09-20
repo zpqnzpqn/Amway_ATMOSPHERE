@@ -10,15 +10,20 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 import urllib.parse
+import uuid
 
 import aiohttp
 
 from .const import (
+    ACCOUNT2_TOKEN_URL,
+    AMWAY_API_KEY,
+    AMWAY_PASSWORD_SALT,
     AWS_IOT_ENDPOINT,
     AWS_REGION,
     CLIENT_ID,
     CLIENT_SECRET,
     CONEX_BASE_URL,
+    DEFAULT_COUNTRY,
     DEFAULT_SCOPES,
     GLUU_AUTH_ENDPOINT,
     GLUU_TOKEN_ENDPOINT,
@@ -28,6 +33,19 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def normalize_username(username: str, country: str = "TW") -> str:
+    """Normalize phone numbers or usernames to international format."""
+    cleaned = username.strip().replace(" ", "").replace("-", "")
+    if country.upper() == "TW":
+        if cleaned.startswith("09") and len(cleaned) == 10:
+            return f"+886{cleaned[1:]}"
+        if cleaned.startswith("9") and len(cleaned) == 9:
+            return f"+886{cleaned}"
+        if cleaned.startswith("886") and not cleaned.startswith("+"):
+            return f"+{cleaned}"
+    return cleaned
 
 
 def _sign(key: bytes, msg: str) -> bytes:
@@ -146,11 +164,17 @@ class AmwayApiClient:
         session: aiohttp.ClientSession,
         access_token: str,
         refresh_token: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        country: str = DEFAULT_COUNTRY,
         on_token_refreshed: Optional[Any] = None,
     ) -> None:
         self._session = session
         self.access_token = access_token
         self.refresh_token = refresh_token
+        self.username = username
+        self.password = password
+        self.country = country
         self._on_token_refreshed = on_token_refreshed
         self._aws_credentials: Optional[Dict[str, Any]] = None
         self._aws_credentials_expires_at: Optional[datetime.datetime] = None
@@ -178,6 +202,61 @@ class AmwayApiClient:
         return f"{GLUU_AUTH_ENDPOINT}?{urllib.parse.urlencode(params)}"
 
     @classmethod
+    async def async_login_with_password(
+        cls,
+        session: aiohttp.ClientSession,
+        username: str,
+        password: str,
+        country: str = DEFAULT_COUNTRY,
+    ) -> Dict[str, Any]:
+        """Perform direct mobile API authentication using username/phone and password."""
+        norm_username = normalize_username(username, country)
+        session_id = str(uuid.uuid4())
+        j_hash = hashlib.md5(
+            (norm_username.lower() + AMWAY_PASSWORD_SALT).encode("utf-8")
+        ).hexdigest()
+
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "x-amw-clientapp": f"healthyhome{country.upper()}",
+            "x-amw-country-app": country.upper(),
+            "x-api-key": AMWAY_API_KEY,
+            "x-session-id": session_id,
+            "j": j_hash,
+            "user-agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            ),
+        }
+        body = {
+            "username": norm_username,
+            "iso_country_code": country.upper(),
+            "password": password,
+        }
+
+        async with session.post(ACCOUNT2_TOKEN_URL, headers=headers, json=body) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                _LOGGER.error("Amway direct login failed (%s): %s", resp.status, text)
+                resp.raise_for_status()
+            data = await resp.json()
+            session_token = data.get("session_token")
+            if not session_token:
+                raise ValueError("Response missing session_token")
+
+            gluu_user = data.get("gluuUser", {})
+            profile = gluu_user.get("profile", {})
+            party_id = profile.get("partyId") or gluu_user.get("partyId")
+
+            return {
+                "access_token": session_token,
+                "username": norm_username,
+                "party_id": party_id,
+                "raw_response": data,
+            }
+
+    @classmethod
     async def async_exchange_code(
         cls, session: aiohttp.ClientSession, auth_code: str
     ) -> Dict[str, Any]:
@@ -195,9 +274,22 @@ class AmwayApiClient:
             return await resp.json()
 
     async def async_refresh_token(self) -> Dict[str, Any]:
-        """Refresh the access token using the refresh_token."""
+        """Refresh the access token using saved credentials or refresh_token."""
+        if self.username and self.password:
+            _LOGGER.info("Re-authenticating Amway session via stored credentials...")
+            login_res = await self.async_login_with_password(
+                self._session, self.username, self.password, self.country
+            )
+            self.access_token = login_res["access_token"]
+            if self._on_token_refreshed:
+                await self._on_token_refreshed({
+                    "access_token": self.access_token,
+                    "refresh_token": self.refresh_token,
+                })
+            return login_res
+
         if not self.refresh_token:
-            raise ValueError("No refresh_token available")
+            raise ValueError("No refresh_token or credentials available")
         data = {
             "grant_type": "refresh_token",
             "refresh_token": self.refresh_token,
@@ -226,7 +318,7 @@ class AmwayApiClient:
         headers["User-Agent"] = "AmwayHealthyHome/20.0.0 (Android)"
 
         async with self._session.request(method, url, headers=headers, **kwargs) as resp:
-            if resp.status == 401 and self.refresh_token:
+            if resp.status == 401 and (self.refresh_token or (self.username and self.password)):
                 _LOGGER.info("Conex API 401 Unauthorized; attempting token refresh...")
                 await self.async_refresh_token()
                 headers["Authorization"] = f"Bearer {self.access_token}"
@@ -238,7 +330,13 @@ class AmwayApiClient:
 
     async def async_get_devices(self) -> List[AtmosphereDeviceState]:
         """Query all things and their shadows from Conex REST API."""
-        data = await self._async_conex_request("GET", "v1/things")
+        params = {
+            "thingType": "sky,neptune,sky-mini",
+            "info": "true",
+            "thing": "true",
+            "shadow": "true",
+        }
+        data = await self._async_conex_request("GET", "v1/things", params=params)
         devices: List[AtmosphereDeviceState] = []
 
         for item in data:
@@ -325,7 +423,7 @@ class AmwayApiClient:
         """Send a RemoteButton command via AWS IoT Data Plane REST API."""
         creds = await self.async_get_aws_credentials()
         access_key = creds["AccessKeyId"]
-        secret_key = creds["SecretKey"]
+        secret_key = creds.get("SecretAccessKey") or creds.get("SecretKey")
         session_token = creds.get("SessionToken")
 
         url = f"https://{AWS_IOT_ENDPOINT}/things/{thing_id}/shadow"

@@ -12,9 +12,13 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import AmwayApiClient
 from .const import (
     CONF_ACCESS_TOKEN,
+    CONF_COUNTRY,
     CONF_EXPIRES_AT,
+    CONF_PASSWORD,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
+    DEFAULT_COUNTRY,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -41,6 +45,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         session=session,
         access_token=entry.data[CONF_ACCESS_TOKEN],
         refresh_token=entry.data.get(CONF_REFRESH_TOKEN),
+        username=entry.data.get(CONF_USERNAME),
+        password=entry.data.get(CONF_PASSWORD),
+        country=entry.data.get(CONF_COUNTRY, DEFAULT_COUNTRY),
         on_token_refreshed=_handle_token_refreshed,
     )
 

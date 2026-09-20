@@ -31,51 +31,58 @@ async def async_setup_entry(
 ) -> None:
     """Set up Amway Atmosphere sensor entities from a config entry."""
     coordinator: AmwayAtmosphereCoordinator = hass.data[DOMAIN][entry.entry_id]
+    known_thing_ids = set()
 
-    entities: List[SensorEntity] = []
-    for thing_id, dev in coordinator.data.items():
-        # Air Quality Sensor (Levels 1-5 for HomeKit)
-        entities.append(AmwayAirQualitySensor(coordinator, thing_id))
+    def _discover_new_entities() -> None:
+        new_entities: List[SensorEntity] = []
+        for thing_id, dev in coordinator.data.items():
+            if thing_id not in known_thing_ids:
+                known_thing_ids.add(thing_id)
+                # Air Quality Sensor (Levels 1-5 for HomeKit)
+                new_entities.append(AmwayAirQualitySensor(coordinator, thing_id))
 
-        # Clean Air Value Sensor
-        entities.append(AmwayCleanAirSensor(coordinator, thing_id))
+                # Clean Air Value Sensor
+                new_entities.append(AmwayCleanAirSensor(coordinator, thing_id))
 
-        # Filter Life Sensors
-        entities.append(
-            AmwayFilterSensor(
-                coordinator,
-                thing_id,
-                filter_type="prefilter",
-                name="Pre-Filter Life",
-                key="prefilter_life_left",
-                icon="mdi:filter-outline",
-            )
-        )
-        entities.append(
-            AmwayFilterSensor(
-                coordinator,
-                thing_id,
-                filter_type="hepa",
-                name="HEPA Filter Life",
-                key="hepa_life_left",
-                icon="mdi:air-filter",
-            )
-        )
-
-        # Carbon Filter Life (Sky models only)
-        if dev.is_sky or dev.carbon_life_left is not None:
-            entities.append(
-                AmwayFilterSensor(
-                    coordinator,
-                    thing_id,
-                    filter_type="carbon",
-                    name="Carbon Filter Life",
-                    key="carbon_life_left",
-                    icon="mdi:molecule",
+                # Filter Life Sensors
+                new_entities.append(
+                    AmwayFilterSensor(
+                        coordinator,
+                        thing_id,
+                        filter_type="prefilter",
+                        name="Pre-Filter Life",
+                        key="prefilter_life_left",
+                        icon="mdi:filter-outline",
+                    )
                 )
-            )
+                new_entities.append(
+                    AmwayFilterSensor(
+                        coordinator,
+                        thing_id,
+                        filter_type="hepa",
+                        name="HEPA Filter Life",
+                        key="hepa_life_left",
+                        icon="mdi:air-filter",
+                    )
+                )
 
-    async_add_entities(entities)
+                # Carbon Filter Life (Sky models only)
+                if dev.is_sky or dev.carbon_life_left is not None:
+                    new_entities.append(
+                        AmwayFilterSensor(
+                            coordinator,
+                            thing_id,
+                            filter_type="carbon",
+                            name="Carbon Filter Life",
+                            key="carbon_life_left",
+                            icon="mdi:molecule",
+                        )
+                    )
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _discover_new_entities()
+    entry.async_on_unload(coordinator.async_add_listener(_discover_new_entities))
 
 
 class AmwayAtmosphereSensorBase(

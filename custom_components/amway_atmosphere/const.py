@@ -3,13 +3,23 @@
 DOMAIN = "amway_atmosphere"
 
 # Configuration keys
+CONF_USERNAME = "username"
+CONF_PASSWORD = "password"
+CONF_COUNTRY = "country"
+CONF_PARTY_ID = "party_id"
 CONF_AUTH_CODE = "auth_code"
 CONF_ACCESS_TOKEN = "access_token"
 CONF_REFRESH_TOKEN = "refresh_token"
 CONF_EXPIRES_AT = "expires_at"
 CONF_SCAN_INTERVAL = "scan_interval"
 
+DEFAULT_COUNTRY = "TW"
 DEFAULT_SCAN_INTERVAL = 30  # seconds
+
+# Amway Account2 Direct Auth Endpoints & Secrets
+ACCOUNT2_TOKEN_URL = "https://account2.amwayglobal.com/v1/token"
+AMWAY_API_KEY = "aa-MG5GsAkYzwh3m4QyYvST"
+AMWAY_PASSWORD_SALT = "d07c86c4d1b3978a860efe817f60eda7"
 
 # OAuth2 & Amway Cloud Endpoints
 AUTH_ENDPOINT = (
