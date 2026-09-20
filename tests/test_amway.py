@@ -1,0 +1,341 @@
+"""Unit tests for Amway Atmosphere integration."""
+
+import datetime
+import json
+import math
+import pytest
+
+from custom_components.amway_atmosphere.api import (
+    AtmosphereDeviceState,
+    sign_aws_v4,
+)
+from custom_components.amway_atmosphere.config_flow import _extract_code
+from custom_components.amway_atmosphere.const import (
+    AIR_QUALITY_LEVELS,
+    MODEL_MINI,
+    MODEL_SKY,
+    PRESET_MODE_AUTO,
+    PRESET_MODE_NIGHT,
+    PRESET_MODE_TURBO,
+)
+
+
+class TestAmwayAuth:
+    """Test authentication and code parsing helpers."""
+
+    def test_extract_code_from_full_url(self):
+        url = "amwayhealthyhome://loginRedirect?code=7a3b4c5d-1111-2222-3333-444455556666&state=amway_ha&scope=openid"
+        assert _extract_code(url) == "7a3b4c5d-1111-2222-3333-444455556666"
+
+    def test_extract_code_from_raw_code(self):
+        raw = " 7a3b4c5d-1111-2222-3333-444455556666 \n"
+        assert _extract_code(raw) == "7a3b4c5d-1111-2222-3333-444455556666"
+
+
+class TestAwsSigV4:
+    """Test AWS Signature Version 4 calculation."""
+
+    def test_sign_aws_v4_headers(self):
+        url = "https://axnk9oqlqxcqh-ats.iot.us-east-1.amazonaws.com/things/test-sky-01/shadow"
+        payload = b'{"state":{"desired":{"RemoteButton":"Speed3"}}}'
+        headers = {"Content-Type": "application/x-amz-json-1.0"}
+        frozen_time = datetime.datetime(2026, 9, 20, 12, 0, 0, tzinfo=datetime.timezone.utc)
+
+        signed = sign_aws_v4(
+            method="POST",
+            url=url,
+            region="us-east-1",
+            service="iotdata",
+            access_key="ASIATESTKEY123",
+            secret_key="secretkey456",
+            session_token="token789",
+            payload=payload,
+            headers=headers,
+            now=frozen_time,
+        )
+
+        assert "authorization" in signed
+        assert signed["authorization"].startswith("AWS4-HMAC-SHA256 Credential=ASIATESTKEY123/20260920/us-east-1/iotdata/aws4_request")
+        assert "SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date;x-amz-security-token" in signed["authorization"]
+        assert signed["x-amz-date"] == "20260920T120000Z"
+        assert signed["x-amz-security-token"] == "token789"
+        assert signed["host"] == "axnk9oqlqxcqh-ats.iot.us-east-1.amazonaws.com"
+
+
+class TestAtmosphereDeviceStateParsing:
+    """Test parsing raw cloud payloads into AtmosphereDeviceState."""
+
+    def test_sky_state_parsing(self):
+        raw_shadow = {
+            "state": {
+                "reported": {
+                    "display": {"speed": 4, "dust": 2},
+                    "system": {
+                        "childLock": False,
+                        "custom": {"mode": 1, "cleanAirVal": 350},
+                    },
+                    "prefilter": {"lifeLeft": 85},
+                    "hepa": {"lifeLeft": 92},
+                    "carbon": {"lifeLeft": 78},
+                }
+            }
+        }
+        dev = AtmosphereDeviceState(
+            thing_id="sky-001",
+            thing_type=MODEL_SKY,
+            device_name="Living Room Sky",
+            connected=True,
+            speed=4,
+            dust_level=2,
+            mode=1,
+            clean_air_val=350,
+            prefilter_life_left=85,
+            hepa_life_left=92,
+            carbon_life_left=78,
+            child_lock=False,
+            raw_shadow=raw_shadow,
+        )
+
+        assert dev.is_sky is True
+        assert dev.is_mini is False
+        assert dev.max_speed == 5
+        assert dev.speed == 4
+        assert dev.dust_level == 2
+        assert AIR_QUALITY_LEVELS[dev.dust_level] == "good"
+
+    def test_mini_state_parsing(self):
+        dev = AtmosphereDeviceState(
+            thing_id="mini-001",
+            thing_type=MODEL_MINI,
+            device_name="Bedroom Mini",
+            connected=True,
+            speed=2,
+            dust_level=1,
+            mode=2,
+            clean_air_val=180,
+            prefilter_life_left=90,
+            hepa_life_left=88,
+            carbon_life_left=None,
+            child_lock=True,
+            raw_shadow={},
+        )
+
+        assert dev.is_sky is False
+        assert dev.is_mini is True
+        assert dev.max_speed == 3
+        assert dev.speed == 2
+        assert dev.carbon_life_left is None
+        assert AIR_QUALITY_LEVELS[dev.dust_level] == "excellent"
+
+
+class TestSpeedPercentageMapping:
+    """Test fan speed and HomeKit percentage mappings."""
+
+    def test_sky_5_speeds_to_percentage(self):
+        # 5 speeds: 1..5
+        speed_count = 5
+        percentages = [round((s / speed_count) * 100) for s in range(1, 6)]
+        assert percentages == [20, 40, 60, 80, 100]
+
+    def test_mini_3_speeds_to_percentage(self):
+        # 3 speeds: 1..3
+        speed_count = 3
+        percentages = [round((s / speed_count) * 100) for s in range(1, 4)]
+        assert percentages == [33, 67, 100]
+
+    def test_percentage_to_speed_step_sky(self):
+        speed_count = 5
+        step_size = 100.0 / speed_count
+        test_cases = [
+            (5, 1),
+            (20, 1),
+            (25, 1),
+            (35, 2),
+            (40, 2),
+            (55, 3),
+            (60, 3),
+            (75, 4),
+            (80, 4),
+            (95, 5),
+            (100, 5),
+        ]
+        for pct, expected_speed in test_cases:
+            step = max(1, min(speed_count, round(pct / step_size)))
+            assert step == expected_speed, f"Percentage {pct}% should map to speed {expected_speed}"
+
+    def test_percentage_to_speed_step_mini(self):
+        speed_count = 3
+        step_size = 100.0 / speed_count
+        test_cases = [
+            (10, 1),
+            (33, 1),
+            (50, 2),
+            (67, 2),
+            (80, 2),
+            (85, 3),
+            (100, 3),
+        ]
+        for pct, expected_speed in test_cases:
+            step = max(1, min(speed_count, round(pct / step_size)))
+            assert step == expected_speed, f"Percentage {pct}% should map to speed {expected_speed}"
+
+
+class TestHomeKitAirQualityMapping:
+    """Test that all 5 dust levels map to HomeKit air quality ratings."""
+
+    def test_all_five_ratings(self):
+        assert AIR_QUALITY_LEVELS[1] == "excellent"
+        assert AIR_QUALITY_LEVELS[2] == "good"
+        assert AIR_QUALITY_LEVELS[3] == "fair"
+        assert AIR_QUALITY_LEVELS[4] == "inferior"
+        assert AIR_QUALITY_LEVELS[5] == "poor"
+
+
+class TestAmwayEntities:
+    """Test Fan and Sensor entity behaviors."""
+
+    def test_fan_entity_sky(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
+
+        async def _run():
+            coordinator = MagicMock()
+            dev = AtmosphereDeviceState(
+                thing_id="sky-001",
+                thing_type=MODEL_SKY,
+                device_name="Living Room Sky",
+                connected=True,
+                speed=3,
+                dust_level=1,
+                mode=1,  # Auto
+                clean_air_val=300,
+                prefilter_life_left=90,
+                hepa_life_left=95,
+                carbon_life_left=80,
+                child_lock=False,
+                raw_shadow={},
+            )
+            coordinator.data = {"sky-001": dev}
+            coordinator.async_send_remote_button = AsyncMock()
+
+            fan = AmwayAtmosphereFan(coordinator, "sky-001")
+            assert fan.is_on is True
+            assert fan.speed_count == 5
+            assert fan.percentage == 60
+            assert fan.preset_mode == PRESET_MODE_AUTO
+            assert PRESET_MODE_TURBO in fan.preset_modes
+
+            await fan.async_set_percentage(100)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Speed5")
+
+            await fan.async_set_preset_mode(PRESET_MODE_TURBO)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Turbo")
+
+            await fan.async_turn_off()
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Power")
+
+        asyncio.run(_run())
+
+    def test_fan_entity_mini(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
+
+        async def _run():
+            coordinator = MagicMock()
+            dev = AtmosphereDeviceState(
+                thing_id="mini-001",
+                thing_type=MODEL_MINI,
+                device_name="Mini",
+                connected=True,
+                speed=1,
+                dust_level=2,
+                mode=2,  # Night
+                clean_air_val=120,
+                prefilter_life_left=90,
+                hepa_life_left=85,
+                carbon_life_left=None,
+                child_lock=False,
+                raw_shadow={},
+            )
+            coordinator.data = {"mini-001": dev}
+            coordinator.async_send_remote_button = AsyncMock()
+
+            fan = AmwayAtmosphereFan(coordinator, "mini-001")
+            assert fan.speed_count == 3
+            assert fan.percentage == 33
+            assert fan.preset_mode == PRESET_MODE_NIGHT
+            assert PRESET_MODE_TURBO not in fan.preset_modes
+
+            with pytest.raises(ValueError):
+                await fan.async_set_preset_mode(PRESET_MODE_TURBO)
+
+        asyncio.run(_run())
+
+    def test_sensors(self):
+        from unittest.mock import MagicMock
+        from custom_components.amway_atmosphere.sensor import (
+            AmwayAirQualitySensor,
+            AmwayCleanAirSensor,
+            AmwayFilterSensor,
+        )
+
+        coordinator = MagicMock()
+        dev = AtmosphereDeviceState(
+            thing_id="sky-001",
+            thing_type=MODEL_SKY,
+            device_name="Sky",
+            connected=True,
+            speed=2,
+            dust_level=4,
+            mode=1,
+            clean_air_val=420,
+            prefilter_life_left=75,
+            hepa_life_left=88,
+            carbon_life_left=65,
+            child_lock=False,
+            raw_shadow={},
+        )
+        coordinator.data = {"sky-001": dev}
+
+        aq_sensor = AmwayAirQualitySensor(coordinator, "sky-001")
+        assert aq_sensor.native_value == "inferior"
+        assert aq_sensor.extra_state_attributes["dust_level"] == 4
+
+        clean_sensor = AmwayCleanAirSensor(coordinator, "sky-001")
+        assert clean_sensor.native_value == 420
+
+        pre_sensor = AmwayFilterSensor(
+            coordinator, "sky-001", "prefilter", "Pre", "prefilter_life_left", "mdi:filter"
+        )
+        assert pre_sensor.native_value == 75
+
+        hepa_sensor = AmwayFilterSensor(
+            coordinator, "sky-001", "hepa", "HEPA", "hepa_life_left", "mdi:air-filter"
+        )
+        assert hepa_sensor.native_value == 88
+
+        carbon_sensor = AmwayFilterSensor(
+            coordinator, "sky-001", "carbon", "Carbon", "carbon_life_left", "mdi:molecule"
+        )
+        assert carbon_sensor.native_value == 65
+
+
+class TestAmwayConfigFlow:
+    """Test config flow logic."""
+
+    def test_config_flow_extract_code_variants(self):
+        # Full URL format
+        url1 = "amwayhealthyhome://loginRedirect?code=98765432-aaaa-bbbb-cccc-dddddddddddd&state=amway_ha"
+        assert _extract_code(url1) == "98765432-aaaa-bbbb-cccc-dddddddddddd"
+
+        # URL with trailing query params
+        url2 = "https://example.com/redirect?code=12345678-aaaa-bbbb-cccc-dddddddddddd&other=val"
+        assert _extract_code(url2) == "12345678-aaaa-bbbb-cccc-dddddddddddd"
+
+        # Plain code with spaces
+        code3 = "  12345678-aaaa-bbbb-cccc-dddddddddddd  "
+        assert _extract_code(code3) == "12345678-aaaa-bbbb-cccc-dddddddddddd"
+
+

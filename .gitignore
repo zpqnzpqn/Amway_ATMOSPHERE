@@ -1,0 +1,10 @@
+.scratch/
+*.xapk
+*.apk
+jadx_out/
+__pycache__/
+*.pyc
+.DS_Store
+tokens.json
+.pytest_cache/
+

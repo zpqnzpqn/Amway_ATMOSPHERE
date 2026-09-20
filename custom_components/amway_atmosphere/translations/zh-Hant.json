@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "連結安麗逸新空氣清淨機 (Amway Atmosphere)",
+        "description": "請在瀏覽器中開啟以下網址進行安麗帳號登入：\n\n[點此開啟安麗登入頁面]({auth_url})\n\n登入完成後，瀏覽器網址列會跳轉為以 `amwayhealthyhome://loginRedirect?code=...` 開頭的網址。\n請將瀏覽器網址列的完整網址（或其中的 `code` 代碼）複製並貼在下方：",
+        "data": {
+          "auth_code": "授權碼 (Code) 或 回調網址"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新認證安麗帳號",
+        "description": "您的安麗登入憑證已過期，請點擊下方連結重新登入：\n\n[點此開啟安麗登入頁面]({auth_url})\n\n並將新的回調網址或 `code` 貼在下方：",
+        "data": {
+          "auth_code": "授權碼 (Code) 或 回調網址"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "無法連線至安麗伺服器或換取憑證失敗，請檢查網路或授權碼。",
+      "invalid_auth_code": "無效的授權碼或回調網址格式。",
+      "unknown": "發生未預期的錯誤。"
+    },
+    "abort": {
+      "already_configured": "此安麗帳號或設備已經設定過了。",
+      "reauth_successful": "重新認證成功！"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Amway Atmosphere 設定選項",
+        "data": {
+          "scan_interval": "雲端狀態輪詢間隔 (秒)"
+        }
+      }
+    }
+  }
+}

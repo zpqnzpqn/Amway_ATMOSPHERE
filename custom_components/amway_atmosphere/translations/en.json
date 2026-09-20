@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Amway Atmosphere",
+        "description": "Please open the following link in your browser to sign in to your Amway account:\n\n[Click here to log in]({auth_url})\n\nAfter logging in, your browser will redirect to a URL starting with `amwayhealthyhome://loginRedirect?code=...`.\nPlease copy the entire redirect URL or the `code` parameter and paste it below.",
+        "data": {
+          "auth_code": "Authorization Code or Callback URL"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Amway Account",
+        "description": "Your Amway login session has expired. Please re-authenticate using the link:\n\n[Click here to log in]({auth_url})\n\nPaste the new redirect URL or `code` below.",
+        "data": {
+          "auth_code": "Authorization Code or Callback URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect or exchange tokens with Amway servers.",
+      "invalid_auth_code": "Invalid authorization code or URL.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This Amway account or device is already configured.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Amway Atmosphere Options",
+        "data": {
+          "scan_interval": "Update Interval (seconds)"
+        }
+      }
+    }
+  }
+}
