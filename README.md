@@ -19,6 +19,8 @@ An official-grade Home Assistant custom integration for **Amway Atmosphere Sky**
 
 ---
 
+> 💡 **First-time setup?** Check out the step-by-step 👉 [**Quick Setup & Token Guide**](docs/setup-guide.md)
+
 ## ✨ Features
 
 - **🌀 Comprehensive Purifier & Fan Control (`fan`)**:

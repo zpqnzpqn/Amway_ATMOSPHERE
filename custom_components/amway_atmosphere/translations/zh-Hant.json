@@ -3,40 +3,40 @@
     "step": {
       "user": {
         "title": "連線至安麗逸新空氣清淨機 (Amway Atmosphere)",
-        "description": "您可以選擇以下任一種方式進行連線：\n1. **（推薦）直接輸入 Access Token**：請使用小工具 `python3 tools/get_token.py` 取得後貼上。\n2. **或輸入手機號碼與密碼**：支援台灣手機號（如 09xxxxxxxx 或 +8869xxxxxxxx）。",
+        "description": "歡迎使用！由於安麗官方安全防護限制，無法直接使用電腦瀏覽器登入（會出現綠色無效頁面）。\n\n👉 **【推薦方式 - 免密碼最安全】**：\n1. 在電腦終端機執行：`python3 tools/get_token.py --proxy`\n2. 手機連同一 Wi-Fi 設定代理，打開「Amway Healthy Home」App 點一下開關。\n3. 複製終端機印出的 Token 貼在下方即可！\n\n👉 **【或直接輸入帳密】**：輸入您的手機號碼與密碼直接登入。",
         "data": {
-          "access_token": "Amway Conex Access Token（推薦）",
-          "username": "手機號碼或帳號",
+          "access_token": "Access Token（推薦，免帳號密碼）",
+          "username": "手機號碼（若無 Token 則填此處）",
           "password": "密碼",
           "country": "國家 / 地區代碼（TW、US、JP 等）"
         }
       },
       "manual_code": {
-        "title": "手動輸入授權碼",
-        "description": "請點擊下方鏈結進行登入，並貼上跳轉後的網址或代碼：\n\n[點此開啟安麗官方登入頁]({auth_url})",
+        "title": "輸入 Access Token 或授權碼",
+        "description": "請在下方貼上您獲取的 Access Token：\n（請在電腦執行 `python3 tools/get_token.py --proxy`，用手機點一下開關即可秒取）",
         "data": {
-          "auth_code": "授權碼 (Code) 或跳轉網址"
+          "auth_code": "Access Token 或授權碼"
         }
       },
       "reauth_confirm": {
         "title": "重新認證安麗帳號",
-        "description": "請輸入帳號 {username} 的最新密碼或更新的 Token 進行重新驗證。",
+        "description": "請輸入帳號 {username} 的最新 Access Token 或密碼以重新完成驗證。",
         "data": {
-          "password": "密碼"
+          "password": "最新 Token 或密碼"
         }
       }
     },
     "error": {
       "cannot_connect": "無法連線至安麗雲端伺服器。",
       "invalid_auth": "無效的 Access Token、手機號碼或密碼。",
-      "invalid_auth_code": "無效的授權碼或回呼網址。",
+      "invalid_auth_code": "無效的 Access Token 或授權碼。",
       "invalid_username": "請輸入正確的手機號碼。",
       "invalid_password": "密碼不能為空。",
-      "missing_credentials_or_token": "請輸入 Access Token 或輸入手機號碼與密碼。",
+      "missing_credentials_or_token": "請輸入 Access Token，或輸入手機號碼與密碼。",
       "unknown": "發生未預期的錯誤。"
     },
     "abort": {
-      "already_configured": "此安麗帳號或設備已完成設定。",
+      "already_configured": "此安麗帳號或清淨機已完成設定。",
       "reauth_successful": "重新驗證成功。"
     }
   },

@@ -3,40 +3,40 @@
     "step": {
       "user": {
         "title": "Connect to Amway Atmosphere",
-        "description": "Choose either method to connect:\n1. (Recommended) Enter your captured **Access Token** (use `python3 tools/get_token.py`).\n2. Or enter your **Phone Number** and **Password**.",
+        "description": "Welcome! Due to Amway cloud security rules, standard web browsers cannot log in directly (shows an invalid green maintenance page).\n\n【Recommended - Fast & Secure】\n1. Run on your computer: `python3 tools/get_token.py --proxy`\n2. Open the mobile App and toggle your purifier switch to capture your Token.\n3. Paste your Access Token below.\n\n【Alternative】\nOr enter your registered Phone Number and Password directly.",
         "data": {
-          "access_token": "Amway Conex Access Token (Recommended)",
-          "username": "Phone Number (e.g. 09xxxxxxxx)",
+          "access_token": "Access Token (Recommended - No Password Required)",
+          "username": "Phone Number (if no token)",
           "password": "Password",
-          "country": "Country / Market Code (TW, US, JP, etc.)"
+          "country": "Country Code (TW, US, JP, etc.)"
         }
       },
       "manual_code": {
-        "title": "Manual Authorization Code",
-        "description": "Please open the link to log in and paste the callback URL or code:\n\n[Click here to log in]({auth_url})",
+        "title": "Access Token Configuration",
+        "description": "Please enter your captured Amway Access Token below.\n(Run `python3 tools/get_token.py --proxy` to capture your token in 10 seconds)",
         "data": {
-          "auth_code": "Authorization Code or Callback URL"
+          "auth_code": "Access Token or Authorization Code"
         }
       },
       "reauth_confirm": {
         "title": "Re-authenticate Amway Account",
-        "description": "Please enter your password or updated token to re-authenticate account {username}.",
+        "description": "Please enter your latest Access Token or Password to re-authenticate account {username}.",
         "data": {
-          "password": "Password"
+          "password": "Password or Updated Token"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to Amway servers.",
+      "cannot_connect": "Failed to connect to Amway cloud servers.",
       "invalid_auth": "Invalid Access Token, phone number, or password.",
-      "invalid_auth_code": "Invalid authorization code or URL.",
+      "invalid_auth_code": "Invalid token or authorization code.",
       "invalid_username": "Please enter a valid phone number.",
       "invalid_password": "Password cannot be empty.",
       "missing_credentials_or_token": "Please provide either an Access Token or a Phone Number with Password.",
       "unknown": "An unexpected error occurred."
     },
     "abort": {
-      "already_configured": "This Amway account or device is already configured.",
+      "already_configured": "This Amway device or account is already configured.",
       "reauth_successful": "Re-authentication was successful."
     }
   },
@@ -45,7 +45,7 @@
       "init": {
         "title": "Amway Atmosphere Options",
         "data": {
-          "scan_interval": "Update Interval (seconds)"
+          "scan_interval": "Status Update Interval (seconds)"
         }
       }
     }
