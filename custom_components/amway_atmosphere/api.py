@@ -25,6 +25,7 @@ from .const import (
     CONEX_BASE_URL,
     DEFAULT_COUNTRY,
     DEFAULT_SCOPES,
+    AUTH_ENDPOINT,
     GLUU_AUTH_ENDPOINT,
     GLUU_TOKEN_ENDPOINT,
     MODEL_MINI,
@@ -183,23 +184,28 @@ class AmwayApiClient:
     def get_authorization_url(
         cls, state: str = "amway_ha", country: str = "TW"
     ) -> str:
-        """Generate the OAuth2 browser URL for user login."""
-        market = country.upper()
-        clientapp = f"healthyhome{market}"
-        lng = "zh-TW" if market == "TW" else ("ja-JP" if market == "JP" else "en-US")
+        """Generate the official Amway consumer login portal URL.
+
+        ⚠️ NOTE: Never use gluu-prod01-prod.../oxauth/restv1/authorize.
+        That is the internal green LDAP page. The real consumer portal is account2.amwayglobal.com.
+        """
+        market = country.lower()
+        if market == "tw":
+            lang = "zh-tw"
+            clientapp = "healthyhomeTW"
+        elif market == "jp":
+            lang = "ja-jp"
+            clientapp = "healthyhomeJP"
+        else:
+            lang = "en-us"
+            clientapp = f"healthyhome{country.upper()}"
+
         params = {
-            "client_id": CLIENT_ID,
-            "response_type": "code",
-            "redirect_uri": REDIRECT_URI,
-            "scope": DEFAULT_SCOPES,
-            "state": state,
-            "prompt": "login",
             "clientapp": clientapp,
-            "amw_clientapp": clientapp,
-            "amw_lng": lng,
+            "redirect": REDIRECT_URI,
             "cancelRedirect": "amwayhealthyhome://cancelLogin",
         }
-        return f"{GLUU_AUTH_ENDPOINT}?{urllib.parse.urlencode(params)}"
+        return f"{AUTH_ENDPOINT}/{lang}/?{urllib.parse.urlencode(params)}"
 
     @classmethod
     async def async_login_with_password(

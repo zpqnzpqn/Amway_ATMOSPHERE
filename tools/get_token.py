@@ -21,9 +21,10 @@ import sys
 import urllib.parse
 import urllib.request
 
-GLUU_AUTH_ENDPOINT = (
-    "https://account2.amwayglobal.com/v1/proxy/oxauth/restv1/authorize"
-)
+# ⚠️ 錯誤端點警告：
+# 切勿使用 gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/authorize，那是綠色內部頁面。
+# 正確官方消費者入口為 account2.amwayglobal.com
+OFFICIAL_AUTH_PORTAL = "https://account2.amwayglobal.com"
 GLUU_TOKEN_ENDPOINT = (
     "https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/token"
 )
@@ -147,17 +148,13 @@ addons = [AmwayTokenInterceptor()]
 
 
 def run_manual_mode() -> None:
-    """Run manual authorization guide via browser."""
+    """Run manual authorization guide via official Amway portal."""
     auth_params = {
-        "client_id": CLIENT_ID,
-        "response_type": "code",
-        "redirect_uri": REDIRECT_URI,
-        "scope": DEFAULT_SCOPES,
         "clientapp": "healthyhomeTW",
-        "amw_lng": "zh-tw",
+        "redirect": REDIRECT_URI,
         "cancelRedirect": "amwayhealthyhome://cancelLogin",
     }
-    url = f"{GLUU_AUTH_ENDPOINT}?{urllib.parse.urlencode(auth_params)}"
+    url = f"{OFFICIAL_AUTH_PORTAL}/zh-tw/?{urllib.parse.urlencode(auth_params)}"
 
     print("\n" + "=" * 70)
     print("🌐 Amway Atmosphere Token 捕獲助手 (瀏覽器手動模式)")

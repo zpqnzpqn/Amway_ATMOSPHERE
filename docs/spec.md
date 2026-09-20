@@ -57,9 +57,10 @@ The `amway_atmosphere` integration connects Amway Atmosphere Sky and Atmosphere 
 ## 3. Architecture & Cloud Seams
 
 ### Seams
-1. **OAuth2 Gateway (`Gluu`)**:
-   - Authorize: `https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/authorize`
-   - Token: `https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/token`
+1. **OAuth2 Gateway (`Amway ID / Account2`)**:
+   - 官方消費者登入入口: `https://account2.amwayglobal.com/{lang}/?clientapp={clientapp}&redirect={redirect}`
+   - ⚠️ 內部工程 LDAP 端點（錯誤，一般消費者密碼無法登入）: `https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/authorize`
+   - Token 交換端點: `https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/token`
 2. **REST Inventory & Telemetry Gateway (`Conex API`)**:
    - Base URL: `https://conex-api.amwayglobal.com/rest/`
    - Devices Endpoint: `GET /rest/v1/things`

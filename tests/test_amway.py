@@ -31,6 +31,16 @@ class TestAmwayAuth:
         raw = " 7a3b4c5d-1111-2222-3333-444455556666 \n"
         assert _extract_code(raw) == "7a3b4c5d-1111-2222-3333-444455556666"
 
+    def test_get_authorization_url_targets_official_account2_portal(self):
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+
+        url_tw = AmwayApiClient.get_authorization_url(country="TW")
+        assert "account2.amwayglobal.com/zh-tw/" in url_tw
+        assert "clientapp=healthyhomeTW" in url_tw
+        assert "redirect=amwayhealthyhome%3A%2F%2FloginRedirect" in url_tw
+        # Critical assertion: Must NOT target the green LDAP maintenance endpoint
+        assert "gluu-prod01-prod.amstack-amwayidv2-prod" not in url_tw
+
 
 class TestAwsSigV4:
     """Test AWS Signature Version 4 calculation."""

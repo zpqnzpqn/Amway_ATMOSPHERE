@@ -22,10 +22,14 @@ AMWAY_API_KEY = "aa-MG5GsAkYzwh3m4QyYvST"
 AMWAY_PASSWORD_SALT = "d07c86c4d1b3978a860efe817f60eda7"
 
 # OAuth2 & Amway Cloud Endpoints
-AUTH_ENDPOINT = (
-    "https://account2.amwayglobal.com/v1/proxy/oauth2/aus2ddwj0luvaUo641t7/v1/authorize"
-)
-GLUU_AUTH_ENDPOINT = AUTH_ENDPOINT
+# ⚠️ 錯誤端點警告 (DO NOT USE)：
+# gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/authorize 是錯誤的！
+# 該端點會導向綠色的內部 LDAP 維護頁面，台灣一般消費者帳號密碼在該處必定驗證失敗。
+# 正確的官方消費者入口為：https://account2.amwayglobal.com/{lang}/?clientapp={clientapp}&redirect={redirect}
+OFFICIAL_AUTH_PORTAL = "https://account2.amwayglobal.com"
+AUTH_ENDPOINT = OFFICIAL_AUTH_PORTAL
+GLUU_AUTH_ENDPOINT = AUTH_ENDPOINT  # Deprecated alias for compatibility
+
 GLUU_TOKEN_ENDPOINT = (
     "https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/token"
 )
