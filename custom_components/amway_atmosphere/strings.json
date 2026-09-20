@@ -3,12 +3,13 @@
     "step": {
       "user": {
         "title": "Connect to Amway Atmosphere",
-        "description": "Please enter your registered Amway mobile phone number and password.\n(Supports Taiwan format: 09xxxxxxxx or +8869xxxxxxxx)\n\n💡 If you already have an Access Token, you can also paste it into the optional token field below.",
+        "description": "Please enter your registered Amway mobile phone number and password to connect your Atmosphere purifier.\nThe integration emulates the official Healthy Home App to authenticate and obtain permanent tokens automatically.\n\n(If you prefer to enter an official authorization code or existing Access Token, you can also fill the optional fields below)",
         "data": {
           "username": "Phone Number",
           "password": "Password",
           "country": "Country Code (Default TW)",
-          "access_token": "(Optional) Access Token"
+          "auth_code": "(Optional) Official Authorization Code or URL",
+          "access_token": "(Optional) Access Token or JSON Payload"
         }
       },
       "manual_code": {
@@ -32,7 +33,8 @@
       "invalid_auth_code": "Invalid token or authorization code.",
       "invalid_username": "Please enter a valid phone number.",
       "invalid_password": "Password cannot be empty.",
-      "missing_credentials_or_token": "Please enter your phone number and password, or provide an Access Token.",
+      "missing_credentials_or_token": "Please enter Phone Number & Password, Authorization Code, or Access Token.",
+      "no_devices_found": "No Atmosphere air purifiers found. Please make sure your purifier is paired in the official Amway Healthy Home App.",
       "unknown": "An unexpected error occurred."
     },
     "abort": {

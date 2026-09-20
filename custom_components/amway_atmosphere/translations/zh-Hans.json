@@ -1,0 +1,82 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "连接至安丽逸新空气净化器 (Amway Atmosphere)",
+        "description": "请输入您的安丽手机号码与密码以连接净化器：\n\n⭐ **推荐方式：手机号码与密码直接登录**\n直接输入手机号码与密码，系统将自动模拟官方 Healthy Home App 完成鉴权，并自动获取永久 Refresh Token。\n\n🔗 **备用方式：官方 OAuth 授权跳转码**\n若偏好手动浏览器授权，请开启 [👉 安丽官方登录页面]({auth_url})，登录后将跳转网址贴入下方“官方授权跳转码”栏位。\n\n💡 **进阶方式：手动填入 Access Token**\n直接填入现有的 Access Token 或 JSON 负载。",
+        "data": {
+          "username": "手机号码",
+          "password": "密码",
+          "country": "国家 / 地区代码（默认 TW）",
+          "auth_code": "（选填）官方授权跳转码 (Code) 或完整网址",
+          "access_token": "（选填）Access Token 或 JSON 负载"
+        }
+      },
+      "manual_code": {
+        "title": "手动输入 Token 或授权码",
+        "description": "请在下方贴上您已取得的 Access Token 或授权代码：",
+        "data": {
+          "auth_code": "Access Token 或授权码"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新认证安丽账号",
+        "description": "请输入账号 {username} 的最新密码以重新完成验证。",
+        "data": {
+          "password": "密码"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "无法连接至安丽服务器，请检查网络连接。",
+      "invalid_auth": "手机号码或密码错误，请重新确认。",
+      "invalid_auth_code": "无效的 Token 或授权码，请确认已完整复制跳转网址。",
+      "invalid_username": "请输入正确格式的手机号码。",
+      "invalid_password": "密码不能为空。",
+      "missing_credentials_or_token": "请填写“手机号码与密码”、“官方授权码”或“Token”其中一种方式。",
+      "no_devices_found": "未在此账号下发现任何空气净化器，请确认该账号已于安丽 Healthy Home App 中绑定净化器。",
+      "oauth_required": "安丽云端要求净化器必须具备 Healthy Home 官方授权，请改用官方授权码登录。",
+      "unknown": "发生未预期的错误。"
+    },
+    "abort": {
+      "already_configured": "此安丽账号或净化器已完成设定。",
+      "reauth_successful": "重新验证成功。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Amway Atmosphere 选项设定",
+        "data": {
+          "scan_interval": "状态更新间隔（秒）"
+        }
+      }
+    }
+  },
+  "entity": {
+    "fan": {
+      "amway_atmosphere": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "Auto": "自动模式",
+              "Night": "夜间模式",
+              "Turbo": "强效 (Turbo)"
+            }
+          }
+        }
+      }
+    },
+    "switch": {
+      "auto_mode": {
+        "name": "自动模式"
+      },
+      "night_mode": {
+        "name": "夜间模式"
+      },
+      "turbo_mode": {
+        "name": "强效 (Turbo)"
+      }
+    }
+  }
+}

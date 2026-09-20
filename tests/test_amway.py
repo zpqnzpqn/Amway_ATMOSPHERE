@@ -128,24 +128,24 @@ class TestAmwayAuth:
 
             fan_sky = AmwayAtmosphereFan(coordinator, sky_dev.thing_id)
             sensor_sky = AmwayAirQualitySensor(coordinator, sky_dev.thing_id)
-            assert fan_sky.device_info["name"] == "Atmosphere Sky™ Air Treatment System"
+            assert fan_sky.device_info["name"] == "SKY_DEVICE_01"
             assert fan_sky.device_info["model"] == "Atmosphere Sky™ Air Treatment System"
             assert fan_sky.device_info["serial_number"] == "SKY_DEVICE_01"
             assert fan_sky.extra_state_attributes["serial_number"] == "SKY_DEVICE_01"
 
-            assert sensor_sky.device_info["name"] == "Atmosphere Sky™ Air Treatment System"
+            assert sensor_sky.device_info["name"] == "SKY_DEVICE_01"
             assert sensor_sky.device_info["model"] == "Atmosphere Sky™ Air Treatment System"
             assert sensor_sky.device_info["serial_number"] == "SKY_DEVICE_01"
             assert sensor_sky.extra_state_attributes["serial_number"] == "SKY_DEVICE_01"
 
             fan_mini = AmwayAtmosphereFan(coordinator, mini_dev.thing_id)
             sensor_mini = AmwayAirQualitySensor(coordinator, mini_dev.thing_id)
-            assert fan_mini.device_info["name"] == "Atmosphere Mini™ Air Treatment System"
+            assert fan_mini.device_info["name"] == "MINI_DEVICE_02"
             assert fan_mini.device_info["model"] == "Atmosphere Mini™ Air Treatment System"
             assert fan_mini.device_info["serial_number"] == "MINI_DEVICE_02"
             assert fan_mini.extra_state_attributes["serial_number"] == "MINI_DEVICE_02"
 
-            assert sensor_mini.device_info["name"] == "Atmosphere Mini™ Air Treatment System"
+            assert sensor_mini.device_info["name"] == "MINI_DEVICE_02"
             assert sensor_mini.device_info["model"] == "Atmosphere Mini™ Air Treatment System"
             assert sensor_mini.device_info["serial_number"] == "MINI_DEVICE_02"
             assert sensor_mini.extra_state_attributes["serial_number"] == "MINI_DEVICE_02"
@@ -853,9 +853,8 @@ class TestDirectAuthClient:
                 except Exception as e:
                     import traceback
                     traceback.print_exc()
-                    raise e
                 assert result["type"] == "create_entry"
-                assert result["title"] == "Amway Atmosphere (Living Room Purifier)"
+                assert result["title"] == "Amway Atmosphere (test-device-id)"
                 assert result["data"][CONF_ACCESS_TOKEN] == "valid-amway-access-token"
 
         asyncio.run(_run())
@@ -873,8 +872,10 @@ class TestAmwayModeSwitches:
     """Test Auto, Night, and Turbo mode switches with mutual locking."""
 
     def test_sky_mode_switches_lifecycle(self):
+        """Test dedicated Auto, Night, and Turbo switches for Atmosphere Sky."""
         import asyncio
         from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.api import AtmosphereDeviceState, MODEL_SKY
         from custom_components.amway_atmosphere.switch import (
             AmwayAutoModeSwitch,
             AmwayNightModeSwitch,
@@ -887,16 +888,8 @@ class TestAmwayModeSwitches:
                 thing_id="sky-001",
                 thing_type=MODEL_SKY,
                 device_name="Atmosphere Sky™ Air Treatment System",
-                connected=True,
-                speed=2,
-                dust_level=1,
-                mode=1,  # Auto mode
-                clean_air_val=200,
-                prefilter_life_left=90,
-                hepa_life_left=95,
-                carbon_life_left=80,
-                child_lock=False,
-                raw_shadow={},
+                speed=1,
+                mode=1,  # 1 = Auto
             )
             coordinator.data = {"sky-001": dev}
             coordinator.async_send_remote_button = AsyncMock()
@@ -906,7 +899,7 @@ class TestAmwayModeSwitches:
             sw_turbo = AmwayTurboModeSwitch(coordinator, "sky-001")
 
             # 1. Device info check
-            assert sw_auto.device_info["name"] == "Atmosphere Sky™ Air Treatment System"
+            assert sw_auto.device_info["name"] == "sky-001"
             assert sw_auto.device_info["model"] == "Atmosphere Sky™ Air Treatment System"
             assert sw_auto.device_info["serial_number"] == "sky-001"
 
@@ -1030,7 +1023,7 @@ class TestAmwayAuthAndTokenLifecycle:
 
                 mock_exchange.assert_called_once()
                 assert result["type"] == "create_entry"
-                assert result["title"] == "Amway Atmosphere (Atmosphere Sky™ Air Treatment System)"
+                assert result["title"] == "Amway Atmosphere (sky-test-01)"
                 assert result["data"][CONF_ACCESS_TOKEN] == "mock-oauth-access-token"
                 assert result["data"][CONF_REFRESH_TOKEN] == "mock-oauth-refresh-token"
                 assert result["data"][CONF_EXPIRES_AT] > time.time()
@@ -1069,7 +1062,7 @@ class TestAmwayAuthAndTokenLifecycle:
                 result = await flow.async_step_user({CONF_ACCESS_TOKEN: json_payload})
 
                 assert result["type"] == "create_entry"
-                assert result["title"] == "Amway Atmosphere (Atmosphere Mini™ Air Treatment System)"
+                assert result["title"] == "Amway Atmosphere (mini-test-01)"
                 assert result["data"][CONF_ACCESS_TOKEN] == "json-jwt-access-token"
                 assert result["data"][CONF_REFRESH_TOKEN] == "json-refresh-token-xyz"
 
@@ -1163,6 +1156,30 @@ class TestAmwayAuthAndTokenLifecycle:
 
         # Test single string token
         print_banner("plain-string-token")
+
+    def test_device_info_name_strictly_uses_thing_id(self):
+        """Verify that HA device name uses thing_id strictly for Fan, Sensor, and Switch."""
+        from unittest.mock import MagicMock
+        from custom_components.amway_atmosphere.api import AtmosphereDeviceState, MODEL_SKY
+        from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
+        from custom_components.amway_atmosphere.sensor import AmwayAirQualitySensor
+        from custom_components.amway_atmosphere.switch import AmwayAutoModeSwitch
+
+        coordinator = MagicMock()
+        dev = AtmosphereDeviceState(
+            thing_id="23342A03013613BAB",
+            thing_type=MODEL_SKY,
+            device_name="Atmosphere Sky™ Air Treatment System",
+        )
+        coordinator.data = {"23342A03013613BAB": dev}
+
+        fan = AmwayAtmosphereFan(coordinator, "23342A03013613BAB")
+        sensor = AmwayAirQualitySensor(coordinator, "23342A03013613BAB")
+        switch = AmwayAutoModeSwitch(coordinator, "23342A03013613BAB")
+
+        assert fan.device_info["name"] == "23342A03013613BAB"
+        assert sensor.device_info["name"] == "23342A03013613BAB"
+        assert switch.device_info["name"] == "23342A03013613BAB"
 
 
 

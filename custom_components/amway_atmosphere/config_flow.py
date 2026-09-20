@@ -109,7 +109,7 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         self._abort_if_unique_id_configured()
 
                         return self.async_create_entry(
-                            title=f"Amway Atmosphere ({devices[0].device_name})",
+                            title=f"Amway Atmosphere ({devices[0].thing_id})",
                             data={
                                 CONF_USERNAME: norm_username,
                                 CONF_PASSWORD: password,
@@ -158,7 +158,7 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             self._abort_if_unique_id_configured()
 
                             return self.async_create_entry(
-                                title=f"Amway Atmosphere ({devices[0].device_name})",
+                                title=f"Amway Atmosphere ({devices[0].thing_id})",
                                 data={
                                     CONF_ACCESS_TOKEN: access_token,
                                     CONF_REFRESH_TOKEN: refresh_token,
@@ -203,7 +203,7 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         self._abort_if_unique_id_configured()
 
                         return self.async_create_entry(
-                            title=f"Amway Atmosphere ({devices[0].device_name})",
+                            title=f"Amway Atmosphere ({devices[0].thing_id})",
                             data={
                                 CONF_ACCESS_TOKEN: access_token,
                                 CONF_REFRESH_TOKEN: refresh_token,

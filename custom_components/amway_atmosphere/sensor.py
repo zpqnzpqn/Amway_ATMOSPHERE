@@ -122,7 +122,7 @@ class AmwayAtmosphereSensorBase(
         )
         return DeviceInfo(
             identifiers={(DOMAIN, self._thing_id)},
-            name=device_name,
+            name=self._thing_id,
             manufacturer="Amway",
             model=model_name,
             serial_number=self._thing_id,
