@@ -66,6 +66,7 @@ htmlcov/
 .ruff_cache/
 
 # IDE and OS
+.antigravity/
 .DS_Store
 .idea/
 .vscode/
