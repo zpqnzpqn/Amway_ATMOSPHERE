@@ -3,36 +3,36 @@
     "step": {
       "user": {
         "title": "連線至安麗逸新空氣清淨機 (Amway Atmosphere)",
-        "description": "歡迎使用！由於安麗官方安全防護限制，無法直接使用電腦瀏覽器登入（會出現綠色無效頁面）。\n\n👉 **【推薦方式 - 免密碼最安全】**：\n1. 在電腦終端機執行：`python3 tools/get_token.py --proxy`\n2. 手機連同一 Wi-Fi 設定代理，打開「Amway Healthy Home」App 點一下開關。\n3. 複製終端機印出的 Token 貼在下方即可！\n\n👉 **【或直接輸入帳密】**：輸入您的手機號碼與密碼直接登入。",
+        "description": "請輸入您註冊安麗帳號的手機號碼與密碼以完成連線。\n（支援台灣手機格式：09xxxxxxxx 或 +8869xxxxxxxx）\n\n💡 若您已有 Access Token，亦可直接在下方「Access Token」欄位填入完成快速連線。",
         "data": {
-          "access_token": "Access Token（推薦，免帳號密碼）",
-          "username": "手機號碼（若無 Token 則填此處）",
+          "username": "手機號碼",
           "password": "密碼",
-          "country": "國家 / 地區代碼（TW、US、JP 等）"
+          "country": "國家 / 地區代碼（預設 TW）",
+          "access_token": "（選填）Access Token"
         }
       },
       "manual_code": {
-        "title": "輸入 Access Token 或授權碼",
-        "description": "請在下方貼上您獲取的 Access Token：\n（請在電腦執行 `python3 tools/get_token.py --proxy`，用手機點一下開關即可秒取）",
+        "title": "手動輸入 Token 或授權碼",
+        "description": "請在下方貼上您已取得的 Access Token 或授權代碼：",
         "data": {
           "auth_code": "Access Token 或授權碼"
         }
       },
       "reauth_confirm": {
         "title": "重新認證安麗帳號",
-        "description": "請輸入帳號 {username} 的最新 Access Token 或密碼以重新完成驗證。",
+        "description": "請輸入帳號 {username} 的最新密碼以重新完成驗證。",
         "data": {
-          "password": "最新 Token 或密碼"
+          "password": "密碼"
         }
       }
     },
     "error": {
-      "cannot_connect": "無法連線至安麗雲端伺服器。",
-      "invalid_auth": "無效的 Access Token、手機號碼或密碼。",
-      "invalid_auth_code": "無效的 Access Token 或授權碼。",
-      "invalid_username": "請輸入正確的手機號碼。",
+      "cannot_connect": "無法連線至安麗伺服器，請檢查網路連線。",
+      "invalid_auth": "手機號碼或密碼錯誤，請重新確認。",
+      "invalid_auth_code": "無效的 Token 或授權碼。",
+      "invalid_username": "請輸入正確格式的手機號碼。",
       "invalid_password": "密碼不能為空。",
-      "missing_credentials_or_token": "請輸入 Access Token，或輸入手機號碼與密碼。",
+      "missing_credentials_or_token": "請輸入手機號碼與密碼，或填入 Access Token。",
       "unknown": "發生未預期的錯誤。"
     },
     "abort": {

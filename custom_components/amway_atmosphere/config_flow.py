@@ -135,15 +135,12 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         errors["base"] = "invalid_auth"
                     else:
                         errors["base"] = "cannot_connect"
-            else:
-                errors["base"] = "missing_credentials_or_token"
-
         schema = vol.Schema(
             {
-                vol.Optional(CONF_ACCESS_TOKEN): str,
-                vol.Optional(CONF_USERNAME, default="+886"): str,
+                vol.Optional(CONF_USERNAME, default="09"): str,
                 vol.Optional(CONF_PASSWORD): str,
                 vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): str,
+                vol.Optional(CONF_ACCESS_TOKEN): str,
             }
         )
 
