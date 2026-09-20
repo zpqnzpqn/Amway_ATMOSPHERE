@@ -52,14 +52,22 @@ DEFAULT_SCOPES = (
 MODEL_SKY = "Sky"
 MODEL_MINI = "Mini"
 
-# Fan Preset Modes
-PRESET_MODE_AUTO = "auto"
-PRESET_MODE_NIGHT = "night"
-PRESET_MODE_TURBO = "turbo"
-PRESET_MODE_MANUAL = "manual"
+# Fan Preset Modes (Title Case as requested)
+PRESET_MODE_AUTO = "Auto"
+PRESET_MODE_NIGHT = "Night"
+PRESET_MODE_TURBO = "Turbo"
+PRESET_MODE_MANUAL = "Manual"
 
 SKY_PRESET_MODES = [PRESET_MODE_AUTO, PRESET_MODE_NIGHT, PRESET_MODE_TURBO]
 MINI_PRESET_MODES = [PRESET_MODE_AUTO, PRESET_MODE_NIGHT]
+
+# Accurate Speed Percentages
+SKY_SPEED_PERCENTAGES = [20, 40, 60, 80, 100]  # 5 speeds
+MINI_SPEED_PERCENTAGES = [33, 67, 100]          # 3 speeds
+
+# Night Mode Maximum Speed Level
+SKY_NIGHT_MAX_SPEED = 2   # Level 1 or 2 (20% or 40%)
+MINI_NIGHT_MAX_SPEED = 1  # Level 1 only (33%)
 
 # Air Quality Ratings (Matching HomeKit 5-tier standard)
 AIR_QUALITY_LEVELS = {

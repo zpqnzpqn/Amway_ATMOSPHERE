@@ -321,6 +321,143 @@ class TestAmwayEntities:
 
         asyncio.run(_run())
 
+    def test_fan_preset_modes_interlocking(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
+
+        async def _run():
+            coordinator = MagicMock()
+            dev = AtmosphereDeviceState(
+                thing_id="sky-001",
+                thing_type=MODEL_SKY,
+                device_name="Sky",
+                connected=True,
+                speed=2,
+                dust_level=1,
+                mode=1,  # Currently Auto
+                clean_air_val=300,
+                prefilter_life_left=90,
+                hepa_life_left=95,
+                carbon_life_left=80,
+                child_lock=False,
+                raw_shadow={},
+            )
+            coordinator.data = {"sky-001": dev}
+            coordinator.async_send_remote_button = AsyncMock()
+
+            fan = AmwayAtmosphereFan(coordinator, "sky-001")
+            assert fan.preset_mode == PRESET_MODE_AUTO
+
+            # 1. Switch to Night (disables Auto/Turbo)
+            await fan.async_set_preset_mode(PRESET_MODE_NIGHT)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Night")
+
+            # 2. Switch to Turbo (disables Auto/Night)
+            coordinator.async_send_remote_button.reset_mock()
+            await fan.async_set_preset_mode(PRESET_MODE_TURBO)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Turbo")
+
+            # 3. Switch to Auto (disables Night/Turbo)
+            coordinator.async_send_remote_button.reset_mock()
+            await fan.async_set_preset_mode(PRESET_MODE_AUTO)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Auto")
+
+            # 4. Switch to Manual/Percentage unlocks preset modes
+            coordinator.async_send_remote_button.reset_mock()
+            await fan.async_set_percentage(40)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Speed2")
+
+        asyncio.run(_run())
+
+    def test_night_mode_speed_constraint(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
+
+        async def _run():
+            coordinator = MagicMock()
+            # Sky in Night mode (mode=2)
+            dev_sky = AtmosphereDeviceState(
+                thing_id="sky-001",
+                thing_type=MODEL_SKY,
+                device_name="Sky",
+                connected=True,
+                speed=1,
+                dust_level=1,
+                mode=2,  # Night
+                clean_air_val=300,
+                prefilter_life_left=90,
+                hepa_life_left=95,
+                carbon_life_left=80,
+                child_lock=False,
+                raw_shadow={},
+            )
+            # Mini in Night mode (mode=2)
+            dev_mini = AtmosphereDeviceState(
+                thing_id="mini-001",
+                thing_type=MODEL_MINI,
+                device_name="Mini",
+                connected=True,
+                speed=1,
+                dust_level=1,
+                mode=2,  # Night
+                clean_air_val=150,
+                prefilter_life_left=90,
+                hepa_life_left=90,
+                carbon_life_left=None,
+                child_lock=False,
+                raw_shadow={},
+            )
+            coordinator.data = {"sky-001": dev_sky, "mini-001": dev_mini}
+            coordinator.async_send_remote_button = AsyncMock()
+
+            fan_sky = AmwayAtmosphereFan(coordinator, "sky-001")
+            fan_mini = AmwayAtmosphereFan(coordinator, "mini-001")
+
+            # Sky in night mode: Requesting 100% (Speed 5) should be clamped to Speed 2
+            await fan_sky.async_set_percentage(100)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Speed2")
+
+            # Sky in night mode: Requesting 20% (Speed 1) stays Speed 1
+            coordinator.async_send_remote_button.reset_mock()
+            await fan_sky.async_set_percentage(20)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Speed1")
+
+            # Mini in night mode: Requesting 100% (Speed 3) should be clamped to Speed 1
+            coordinator.async_send_remote_button.reset_mock()
+            await fan_mini.async_set_percentage(100)
+            coordinator.async_send_remote_button.assert_called_with("mini-001", "Speed1")
+
+        asyncio.run(_run())
+
+    def test_turbo_mode_speed_100(self):
+        from unittest.mock import MagicMock
+        from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
+
+        coordinator = MagicMock()
+        dev_turbo = AtmosphereDeviceState(
+            thing_id="sky-001",
+            thing_type=MODEL_SKY,
+            device_name="Sky",
+            connected=True,
+            speed=5,
+            dust_level=1,
+            mode=3,  # Turbo mode
+            clean_air_val=350,
+            prefilter_life_left=90,
+            hepa_life_left=95,
+            carbon_life_left=80,
+            child_lock=False,
+            raw_shadow={},
+        )
+        coordinator.data = {"sky-001": dev_turbo}
+        fan = AmwayAtmosphereFan(coordinator, "sky-001")
+
+        assert fan.preset_mode == PRESET_MODE_TURBO
+        assert fan.percentage == 100
+
+
     def test_sensors(self):
         from unittest.mock import MagicMock
         from custom_components.amway_atmosphere.sensor import (

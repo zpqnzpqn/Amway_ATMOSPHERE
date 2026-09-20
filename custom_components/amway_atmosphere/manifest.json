@@ -10,5 +10,5 @@
   "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/zpqnzpqn/Amway_ATMOSPHERE/issues",
-  "version": "0.2.5"
+  "version": "0.2.6"
 }

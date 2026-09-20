@@ -49,5 +49,20 @@
         }
       }
     }
+  },
+  "entity": {
+    "fan": {
+      "amway_atmosphere": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "Auto": "Auto",
+              "Night": "Night",
+              "Turbo": "Turbo"
+            }
+          }
+        }
+      }
+    }
   }
 }

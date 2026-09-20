@@ -49,5 +49,20 @@
         }
       }
     }
+  },
+  "entity": {
+    "fan": {
+      "amway_atmosphere": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "Auto": "自動模式",
+              "Night": "夜間模式",
+              "Turbo": "超量/強效 (Turbo)"
+            }
+          }
+        }
+      }
+    }
   }
 }

@@ -19,12 +19,16 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .api import AtmosphereDeviceState
 from .const import (
     DOMAIN,
+    MINI_NIGHT_MAX_SPEED,
     MINI_PRESET_MODES,
+    MINI_SPEED_PERCENTAGES,
     MODEL_SKY,
     PRESET_MODE_AUTO,
     PRESET_MODE_NIGHT,
     PRESET_MODE_TURBO,
+    SKY_NIGHT_MAX_SPEED,
     SKY_PRESET_MODES,
+    SKY_SPEED_PERCENTAGES,
 )
 from .coordinator import AmwayAtmosphereCoordinator
 
@@ -121,12 +125,23 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
         dev = self._device
         if not dev or dev.speed <= 0:
             return 0
-        pct = round((dev.speed / self.speed_count) * 100)
-        return min(100, max(0, pct))
+
+        # Turbo mode is always 100%
+        if self.preset_mode == PRESET_MODE_TURBO:
+            return 100
+
+        if dev.is_sky:
+            # 5 speeds: 20%, 40%, 60%, 80%, 100%
+            idx = min(len(SKY_SPEED_PERCENTAGES), max(1, dev.speed)) - 1
+            return SKY_SPEED_PERCENTAGES[idx]
+        else:
+            # 3 speeds: 33%, 67%, 100%
+            idx = min(len(MINI_SPEED_PERCENTAGES), max(1, dev.speed)) - 1
+            return MINI_SPEED_PERCENTAGES[idx]
 
     @property
     def preset_modes(self) -> List[str]:
-        """Return supported preset modes."""
+        """Return supported preset modes (Auto, Night, Turbo)."""
         dev = self._device
         if dev and dev.is_sky:
             return SKY_PRESET_MODES
@@ -134,11 +149,13 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
 
     @property
     def preset_mode(self) -> Optional[str]:
-        """Return current preset mode."""
+        """Return current preset mode (Auto, Night, or Turbo)."""
         dev = self._device
         if not dev or not self.is_on:
             return None
-        # In Atmosphere shadow, custom.mode: 1 = Auto, 2 = Night, 3 = Turbo (if Sky)
+
+        # Mode in Atmosphere Shadow:
+        # 1 = Auto, 2 = Night, 3 = Turbo (Sky only), 0 = Manual
         mode = dev.mode
         if mode == 1:
             return PRESET_MODE_AUTO
@@ -149,20 +166,45 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
         return None
 
     async def async_set_percentage(self, percentage: int) -> None:
-        """Set the speed percentage of the purifier."""
+        """Set the speed percentage with Night mode boundary constraints."""
         if percentage == 0:
             await self.async_turn_off()
             return
 
-        # Map percentage to discrete speed step
-        step_size = 100.0 / self.speed_count
-        speed_step = max(1, min(self.speed_count, round(percentage / step_size)))
-        button_name = f"Speed{speed_step}"
+        dev = self._device
+        is_sky = dev.is_sky if dev else True
 
+        # Map percentage to speed step
+        if is_sky:
+            if percentage <= 20:
+                speed_step = 1
+            elif percentage <= 40:
+                speed_step = 2
+            elif percentage <= 60:
+                speed_step = 3
+            elif percentage <= 80:
+                speed_step = 4
+            else:
+                speed_step = 5
+        else:
+            if percentage <= 33:
+                speed_step = 1
+            elif percentage <= 67:
+                speed_step = 2
+            else:
+                speed_step = 3
+
+        # Constraint: When in Night mode, speed is strictly constrained
+        # (Sky: speed 1 or 2; Mini: speed 1 only)
+        if self.preset_mode == PRESET_MODE_NIGHT:
+            max_night_speed = SKY_NIGHT_MAX_SPEED if is_sky else MINI_NIGHT_MAX_SPEED
+            speed_step = min(speed_step, max_night_speed)
+
+        button_name = f"Speed{speed_step}"
         await self.coordinator.async_send_remote_button(self._thing_id, button_name)
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        """Set preset mode."""
+        """Set preset mode with strict 3-way mutual locking (Auto / Night / Turbo)."""
         button_map = {
             PRESET_MODE_AUTO: "Auto",
             PRESET_MODE_NIGHT: "Night",
@@ -176,6 +218,8 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
         if button_name == "Turbo" and dev and not dev.is_sky:
             raise ValueError("Turbo mode is only supported on Atmosphere Sky")
 
+        # Mutual locking: Sending the target button automatically switches mode in Cloud Shadow,
+        # clearing the other two modes.
         await self.coordinator.async_send_remote_button(self._thing_id, button_name)
 
     async def async_turn_on(
