@@ -42,6 +42,43 @@ class TestAmwayAuth:
         # Critical assertion: Must NOT target the green LDAP maintenance endpoint
         assert "gluu-prod01-prod.amstack-amwayidv2-prod" not in url_tw
 
+    def test_device_connected_extracted_from_shadow_system(self):
+        import asyncio
+        from unittest.mock import AsyncMock
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+
+        async def _run():
+            from unittest.mock import MagicMock
+            mock_session = MagicMock()
+            mock_resp = AsyncMock()
+            mock_resp.status = 200
+            mock_resp.json = AsyncMock(return_value=[
+                {
+                    "thingId": "TEST_THING_01",
+                    "thingType": "sky",
+                    "info": {"thingInfo": {"deviceName": "Living Room"}},
+                    "shadow": {
+                        "payload": json.dumps({
+                            "state": {
+                                "reported": {
+                                    "system": {"connected": True},
+                                    "display": {"speed": 2, "dust": 1},
+                                }
+                            }
+                        })
+                    }
+                }
+            ])
+            mock_session.request.return_value.__aenter__.return_value = mock_resp
+
+            client = AmwayApiClient(session=mock_session, access_token="mock_token")
+            devices = await client.async_get_devices()
+            assert len(devices) == 1
+            assert devices[0].connected is True
+            assert devices[0].speed == 2
+
+        asyncio.run(_run())
+
 
 class TestAwsSigV4:
     """Test AWS Signature Version 4 calculation."""

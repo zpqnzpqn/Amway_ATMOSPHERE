@@ -355,7 +355,6 @@ class AmwayApiClient:
         for item in data:
             thing_id = item.get("thingId", "")
             thing_type = item.get("thingType", MODEL_SKY)
-            connected = item.get("connected", False)
 
             info = item.get("info", {}) or {}
             thing_info = info.get("thingInfo") or info.get("thing") or {}
@@ -383,6 +382,11 @@ class AmwayApiClient:
             system = reported.get("system", {}) or {}
             custom = system.get("custom", {}) or {}
 
+            # Connected status is stored in reported.system.connected
+            connected = system.get("connected")
+            if connected is None:
+                connected = item.get("connected", True)
+
             prefilter = reported.get("prefilter", {}) or {}
             hepa = reported.get("hepa", {}) or {}
             carbon = reported.get("carbon", {}) or {}
@@ -391,7 +395,7 @@ class AmwayApiClient:
                 thing_id=thing_id,
                 thing_type=thing_type,
                 device_name=device_name,
-                connected=connected,
+                connected=bool(connected),
                 speed=display.get("speed", 0),
                 dust_level=display.get("dust", 1),
                 mode=custom.get("mode"),
