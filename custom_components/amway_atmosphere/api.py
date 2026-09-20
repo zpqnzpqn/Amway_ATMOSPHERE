@@ -201,11 +201,18 @@ class AmwayApiClient:
             clientapp = f"healthyhome{country.upper()}"
 
         params = {
+            "client_id": CLIENT_ID,
+            "response_type": "code",
+            "redirect_uri": REDIRECT_URI,
+            "scope": DEFAULT_SCOPES,
+            "prompt": "login",
             "clientapp": clientapp,
-            "redirect": REDIRECT_URI,
+            "amw_clientapp": clientapp,
+            "amw_lng": "zh_tw" if market == "tw" else ("ja_jp" if market == "jp" else "en_us"),
             "cancelRedirect": "amwayhealthyhome://cancelLogin",
+            "state": state,
         }
-        return f"{AUTH_ENDPOINT}/{lang}/?{urllib.parse.urlencode(params)}"
+        return f"{AUTH_ENDPOINT}?{urllib.parse.urlencode(params)}"
 
     @classmethod
     async def async_login_with_password(

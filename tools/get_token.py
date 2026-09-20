@@ -21,10 +21,10 @@ import sys
 import urllib.parse
 import urllib.request
 
-# ⚠️ 錯誤端點警告：
-# 切勿使用 gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/authorize，那是綠色內部頁面。
-# 正確官方消費者入口為 account2.amwayglobal.com
-OFFICIAL_AUTH_PORTAL = "https://account2.amwayglobal.com"
+# 正確官方消費者 OAuth2 授權代理入口（非綠色 Gluu 端點，登入後會正常跳轉至 amwayhealthyhome://loginRedirect?code=...）
+OFFICIAL_AUTH_PORTAL = (
+    "https://account2.amwayglobal.com/v1/proxy/oauth2/aus2ddwj0luvaUo641t7/v1/authorize"
+)
 GLUU_TOKEN_ENDPOINT = (
     "https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/token"
 )
@@ -91,19 +91,28 @@ def run_proxy_mode(port: int = 8080) -> None:
 
     # In-memory inline capture addon script
     addon_code = """
-import json
+import json, os
 
 class AmwayTokenInterceptor:
     def request(self, flow):
         auth = flow.request.headers.get("Authorization", "")
         if auth.startswith("Bearer "):
             token = auth.split("Bearer ")[1].strip()
-            # Conex bearer token typically has ~2000+ length containing durables scopes
-            if len(token) > 500:
+            if len(token) > 300:
                 print("TOKEN_FOUND:" + token, flush=True)
+
+    def response(self, flow):
+        if "oxauth/restv1/token" in flow.request.pretty_url and flow.response.status_code == 200:
+            try:
+                data = json.loads(flow.response.get_text())
+                if "access_token" in data:
+                    print("TOKEN_FOUND:" + data["access_token"], flush=True)
+            except Exception:
+                pass
 
 addons = [AmwayTokenInterceptor()]
 """
+    import shutil
     import subprocess
     import tempfile
 
@@ -111,10 +120,13 @@ addons = [AmwayTokenInterceptor()]
         tf.write(addon_code)
         addon_path = tf.name
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "mitmproxy.tools.main",
+    mitm_bin = shutil.which("mitmdump") or os.path.expanduser("~/Library/Python/3.9/bin/mitmdump")
+    if os.path.exists(mitm_bin):
+        mitm_cmd = [mitm_bin]
+    else:
+        mitm_cmd = [sys.executable, "-m", "mitmproxy.tools.dump"]
+
+    cmd = mitm_cmd + [
         "-s",
         addon_path,
         "-p",
@@ -135,6 +147,15 @@ addons = [AmwayTokenInterceptor()]
             if "TOKEN_FOUND:" in line:
                 token = line.split("TOKEN_FOUND:")[1].strip()
                 proc.terminate()
+                # Also save to .scratch/current_tokens.json for convenience
+                scratch_dir = os.path.join(os.path.dirname(__file__), "..", ".scratch")
+                if os.path.exists(scratch_dir):
+                    try:
+                        token_file = os.path.join(scratch_dir, "current_tokens.json")
+                        with open(token_file, "w", encoding="utf-8") as f:
+                            json.dump({"access_token": token}, f, indent=2)
+                    except Exception:
+                        pass
                 print_banner(token)
                 break
     except FileNotFoundError:
@@ -150,11 +171,18 @@ addons = [AmwayTokenInterceptor()]
 def run_manual_mode() -> None:
     """Run manual authorization guide via official Amway portal."""
     auth_params = {
+        "client_id": CLIENT_ID,
+        "response_type": "code",
+        "redirect_uri": REDIRECT_URI,
+        "scope": DEFAULT_SCOPES,
+        "prompt": "login",
         "clientapp": "healthyhomeTW",
-        "redirect": REDIRECT_URI,
+        "amw_clientapp": "healthyhomeTW",
+        "amw_lng": "zh_tw",
         "cancelRedirect": "amwayhealthyhome://cancelLogin",
+        "state": "amway_ha",
     }
-    url = f"{OFFICIAL_AUTH_PORTAL}/zh-tw/?{urllib.parse.urlencode(auth_params)}"
+    url = f"{OFFICIAL_AUTH_PORTAL}?{urllib.parse.urlencode(auth_params)}"
 
     print("\n" + "=" * 70)
     print("🌐 Amway Atmosphere Token 捕獲助手 (瀏覽器手動模式)")

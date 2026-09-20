@@ -35,9 +35,10 @@ class TestAmwayAuth:
         from custom_components.amway_atmosphere.api import AmwayApiClient
 
         url_tw = AmwayApiClient.get_authorization_url(country="TW")
-        assert "account2.amwayglobal.com/zh-tw/" in url_tw
+        assert "account2.amwayglobal.com/v1/proxy/oauth2" in url_tw
         assert "clientapp=healthyhomeTW" in url_tw
-        assert "redirect=amwayhealthyhome%3A%2F%2FloginRedirect" in url_tw
+        assert "redirect_uri=amwayhealthyhome%3A%2F%2FloginRedirect" in url_tw
+        assert "client_id=7b90a30d-b404-4da7-a72b-449db798387c" in url_tw
         # Critical assertion: Must NOT target the green LDAP maintenance endpoint
         assert "gluu-prod01-prod.amstack-amwayidv2-prod" not in url_tw
 
