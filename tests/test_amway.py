@@ -670,36 +670,90 @@ class TestDirectAuthClient:
     def test_direct_login_request_generation(self):
         import asyncio
         from unittest.mock import AsyncMock, MagicMock
-        from custom_components.amway_atmosphere.api import AmwayApiClient
+        from custom_components.amway_atmosphere.api import AmwayApiClient, generate_pkce
+
+        # 1. Test PKCE generation
+        verifier, challenge = generate_pkce()
+        assert len(verifier) >= 43
+        assert len(challenge) > 20
 
         async def _run():
             mock_session = MagicMock()
-            mock_resp = AsyncMock()
-            mock_resp.status = 200
-            mock_resp.json = AsyncMock(
+
+            # Step 1 GET: redirects with jansKey
+            mock_resp_step1 = AsyncMock()
+            mock_resp_step1.status = 302
+            mock_resp_step1.headers = {
+                "Location": "https://account2.amwayglobal.com?jansKey=mock-jans-key-999&exp_at=1770000000"
+            }
+
+            # Step 2 POST: credentials verification
+            mock_resp_step2 = AsyncMock()
+            mock_resp_step2.status = 200
+            mock_resp_step2.json = AsyncMock(
                 return_value={
-                    "session_token": "mock-jwt-token-123",
                     "gluuUser": {"profile": {"partyId": "12345678"}},
                 }
             )
-            mock_session.post.return_value.__aenter__.return_value = mock_resp
+
+            # Step 3 GET: returns auth code redirect
+            mock_resp_step3 = AsyncMock()
+            mock_resp_step3.status = 302
+            mock_resp_step3.headers = {
+                "Location": "amwayhealthyhome://loginRedirect?code=mock-code-777&scope=all"
+            }
+
+            # Step 4 POST: token exchange
+            mock_resp_step4 = AsyncMock()
+            mock_resp_step4.status = 200
+            mock_resp_step4.json = AsyncMock(
+                return_value={
+                    "access_token": "mock-conex-token-abc",
+                    "refresh_token": "mock-refresh-token-xyz",
+                    "expires_in": 3600,
+                    "scope": "durables:parties:read",
+                }
+            )
+
+            # Route get calls
+            get_context_1 = AsyncMock()
+            get_context_1.__aenter__.return_value = mock_resp_step1
+            get_context_3 = AsyncMock()
+            get_context_3.__aenter__.return_value = mock_resp_step3
+            mock_session.get.side_effect = [get_context_1, get_context_3]
+
+            # Route post calls
+            post_context_2 = AsyncMock()
+            post_context_2.__aenter__.return_value = mock_resp_step2
+            post_context_4 = AsyncMock()
+            post_context_4.__aenter__.return_value = mock_resp_step4
+            mock_session.post.side_effect = [post_context_2, post_context_4]
 
             result = await AmwayApiClient.async_login_with_password(
                 mock_session, "0912345678", "secret123", country="TW"
             )
 
-            assert result["access_token"] == "mock-jwt-token-123"
+            assert result["access_token"] == "mock-conex-token-abc"
+            assert result["refresh_token"] == "mock-refresh-token-xyz"
+            assert result["expires_in"] == 3600
             assert result["username"] == "+886912345678"
             assert result["party_id"] == "12345678"
 
-            mock_session.post.assert_called_once()
-            call_args = mock_session.post.call_args
-            assert "https://account2.amwayglobal.com/v1/token" in call_args[0]
-            headers = call_args[1]["headers"]
+            # Verify POST calls
+            assert mock_session.post.call_count == 2
+            step2_call = mock_session.post.call_args_list[0]
+            assert "https://account2.amwayglobal.com/v1/token" in step2_call[0]
+            headers = step2_call[1]["headers"]
             assert headers["x-amw-clientapp"] == "healthyhomeTW"
             assert "j" in headers
-            body = call_args[1]["json"]
+            body = step2_call[1]["json"]
             assert body["username"] == "+886912345678"
+            assert body["jnsKey"] == "mock-jans-key-999"
+
+            step4_call = mock_session.post.call_args_list[1]
+            assert "oxauth/restv1/token" in step4_call[0][0]
+            assert step4_call[1]["data"]["code"] == "mock-code-777"
+            assert "code_verifier" in step4_call[1]["data"]
 
         asyncio.run(_run())
 

@@ -31,6 +31,9 @@ OFFICIAL_AUTH_PORTAL = (
 )
 AUTH_ENDPOINT = OFFICIAL_AUTH_PORTAL
 GLUU_AUTH_ENDPOINT = AUTH_ENDPOINT  # Deprecated alias for compatibility
+GLUU_OXAUTH_ENDPOINT = (
+    "https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/authorize"
+)
 
 GLUU_TOKEN_ENDPOINT = (
     "https://gluu-prod01-prod.amstack-amwayidv2-prod.amwayglobal.com/oxauth/restv1/token"

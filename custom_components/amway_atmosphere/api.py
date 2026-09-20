@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import base64
 import datetime
 from dataclasses import dataclass, field
 import hashlib
 import hmac
 import json
 import logging
-from typing import Any, Dict, List, Optional
+import secrets
+from typing import Any, Dict, List, Optional, Tuple
 import urllib.parse
 import uuid
 
@@ -29,13 +31,28 @@ from .const import (
     DEFAULT_SCOPES,
     AUTH_ENDPOINT,
     GLUU_AUTH_ENDPOINT,
+    GLUU_OXAUTH_ENDPOINT,
     GLUU_TOKEN_ENDPOINT,
     MODEL_MINI,
     MODEL_SKY,
+    OFFICIAL_AUTH_PORTAL,
     REDIRECT_URI,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def generate_pkce() -> Tuple[str, str]:
+    """Generate PKCE code_verifier and code_challenge according to RFC 7636."""
+    verifier = (
+        secrets.token_urlsafe(64)[:64]
+        .replace("-", "_")
+        .replace("~", "")
+        .replace(".", "")
+    )
+    digest = hashlib.sha256(verifier.encode("ascii")).digest()
+    challenge = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+    return verifier, challenge
 
 
 def normalize_username(username: str, country: str = "TW") -> str:
@@ -230,52 +247,194 @@ class AmwayApiClient:
         password: str,
         country: str = DEFAULT_COUNTRY,
     ) -> Dict[str, Any]:
-        """Perform direct mobile API authentication using username/phone and password."""
+        """Perform full 5-step Android OAuth2 PKCE + JansKey authentication.
+
+        Replicates the official Amway Healthy Home mobile app flow:
+        1. Initiates PKCE OAuth authorization to receive jansKey from Amway Proxy.
+        2. Submits credentials to Account2 token endpoint with jnsKey.
+        3. Calls oxauth authorization endpoint with jansKey to receive OAuth Authorization Code.
+        4. Exchanges authorization code with PKCE code_verifier to receive Conex access_token and refresh_token.
+        """
         norm_username = normalize_username(username, country)
+        country_code = country.upper()
+        market = country.lower()
+        if market == "tw":
+            lang = "zh-tw"
+            client_app = "healthyhomeTW"
+        elif market == "jp":
+            lang = "ja-jp"
+            client_app = "healthyhomeJP"
+        else:
+            lang = "en-us"
+            client_app = f"healthyhome{country_code}"
+
+        # 1. Generate PKCE verifier, challenge, state and nonce
+        code_verifier, code_challenge = generate_pkce()
+        state = secrets.token_urlsafe(16)
+        nonce = secrets.token_urlsafe(16)
+
+        auth_params = {
+            "redirect_uri": REDIRECT_URI,
+            "client_id": CLIENT_ID,
+            "response_type": "code",
+            "prompt": "login",
+            "state": state,
+            "nonce": nonce,
+            "scope": DEFAULT_SCOPES,
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+            "amw_clientapp": client_app,
+            "cancelRedirect": "amwayhealthyhome://cancelLogin",
+            "clientapp": client_app,
+            "amw_lng": lang,
+        }
+
+        # Step 1: Follow redirects to get jansKey
+        curr_url = OFFICIAL_AUTH_PORTAL
+        curr_params: Optional[Dict[str, str]] = auth_params
+        jans_key = ""
+        exp_at = ""
+        last_loc = ""
+        mobile_ua = (
+            "Mozilla/5.0 (Linux; Android 13; sdk_gphone64_arm64 Build/TE1A.220922.034) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.71 Mobile Safari/537.36"
+        )
+        base_headers = {
+            "accept-encoding": "gzip, deflate",
+            "user-agent": mobile_ua,
+        }
+
+        for _ in range(5):
+            async with session.get(
+                curr_url, params=curr_params, headers=base_headers, allow_redirects=False
+            ) as resp:
+                loc = resp.headers.get("Location", "")
+                last_loc = loc
+                if "jansKey=" in loc:
+                    parsed_loc = urllib.parse.urlparse(loc)
+                    q_params = urllib.parse.parse_qs(parsed_loc.query)
+                    jans_key = q_params.get("jansKey", [""])[0]
+                    exp_at = q_params.get("exp_at", [""])[0]
+                    break
+                if not loc:
+                    break
+                curr_url = loc
+                curr_params = None
+
+        if not jans_key:
+            _LOGGER.error("Failed to obtain jansKey from Amway OAuth portal. Last location: %s", last_loc)
+            raise ValueError("Failed to obtain jansKey from Amway OAuth portal")
+
+        # Step 2: POST /v1/token with credentials and jnsKey
         session_id = str(uuid.uuid4())
         j_hash = hashlib.md5(
             (norm_username.lower() + AMWAY_PASSWORD_SALT).encode("utf-8")
         ).hexdigest()
 
-        headers = {
-            "accept": "application/json",
+        token_headers = {
+            "x-amw-clientapp": client_app,
+            "x-amw-country-app": country_code,
             "content-type": "application/json",
-            "x-amw-clientapp": f"healthyhome{country.upper()}",
-            "x-amw-country-app": country.upper(),
-            "x-api-key": AMWAY_API_KEY,
+            "accept-encoding": "gzip, deflate",
             "x-session-id": session_id,
             "j": j_hash,
-            "user-agent": (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-            ),
+            "x-api-key": AMWAY_API_KEY,
+            "origin": "https://account2.amwayglobal.com",
+            "referer": last_loc,
+            "user-agent": mobile_ua,
         }
-        body = {
+        token_body = {
             "username": norm_username,
-            "iso_country_code": country.upper(),
+            "iso_country_code": country_code,
             "password": password,
+            "jnsKey": jans_key,
         }
 
-        async with session.post(ACCOUNT2_TOKEN_URL, headers=headers, json=body) as resp:
+        async with session.post(ACCOUNT2_TOKEN_URL, headers=token_headers, json=token_body) as resp:
             if resp.status != 200:
                 text = await resp.text()
-                _LOGGER.error("Amway direct login failed (%s): %s", resp.status, text)
+                _LOGGER.error("Amway credentials submission failed (%s): %s", resp.status, text)
                 resp.raise_for_status()
-            data = await resp.json()
-            session_token = data.get("session_token")
-            if not session_token:
-                raise ValueError("Response missing session_token")
+            account_data = await resp.json()
 
-            gluu_user = data.get("gluuUser", {})
-            profile = gluu_user.get("profile", {})
-            party_id = profile.get("partyId") or gluu_user.get("partyId")
+        gluu_user = account_data.get("gluuUser", {})
+        profile = gluu_user.get("profile", {})
+        party_id = profile.get("partyId") or gluu_user.get("partyId")
 
-            return {
-                "access_token": session_token,
-                "username": norm_username,
-                "party_id": party_id,
-                "raw_response": data,
-            }
+        # Step 3: Call oxauth/restv1/authorize with jansKey to receive OAuth Code
+        # CRITICAL: MUST NOT include prompt=login here!
+        authorize_params = dict(auth_params)
+        authorize_params.pop("prompt", None)
+        authorize_params["jansKey"] = jans_key
+        authorize_params["exp_at"] = exp_at
+
+        curr_url = GLUU_OXAUTH_ENDPOINT
+        curr_params = authorize_params
+        auth_code = None
+
+        for _ in range(5):
+            async with session.get(
+                curr_url, params=curr_params, headers=base_headers, allow_redirects=False
+            ) as resp:
+                loc = resp.headers.get("Location", "")
+                if "code=" in loc:
+                    parsed_code = urllib.parse.urlparse(loc)
+                    q_code = urllib.parse.parse_qs(parsed_code.query)
+                    code_list = q_code.get("code")
+                    if code_list:
+                        auth_code = code_list[0]
+                    else:
+                        auth_code = loc.split("code=")[1].split("&")[0]
+                    break
+                if not loc:
+                    break
+                curr_url = loc
+                curr_params = None
+
+        if not auth_code:
+            _LOGGER.error("Failed to receive OAuth authorization code after credential verification")
+            raise ValueError("Failed to receive OAuth authorization code")
+
+        # Step 4: Exchange authorization code for tokens via PKCE code_verifier
+        exchange_data = {
+            "code": auth_code,
+            "grant_type": "authorization_code",
+            "scope": DEFAULT_SCOPES,
+            "redirect_uri": REDIRECT_URI,
+            "client_secret": CLIENT_SECRET,
+            "code_verifier": code_verifier,
+            "client_id": CLIENT_ID,
+        }
+        exchange_headers = {
+            "accept-encoding": "gzip, deflate",
+            "user-agent": mobile_ua,
+        }
+
+        async with session.post(GLUU_TOKEN_ENDPOINT, data=exchange_data, headers=exchange_headers) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                _LOGGER.error("Amway token exchange failed (%s): %s", resp.status, text)
+                resp.raise_for_status()
+            token_res = await resp.json()
+
+        access_token = token_res.get("access_token")
+        refresh_token = token_res.get("refresh_token")
+        expires_in = token_res.get("expires_in", 3600)
+
+        if not access_token:
+            raise ValueError("Token exchange missing access_token")
+
+        _LOGGER.info("Successfully authenticated Amway mobile account for %s", norm_username)
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_in": expires_in,
+            "scope": token_res.get("scope", DEFAULT_SCOPES),
+            "username": norm_username,
+            "party_id": party_id,
+            "raw_response": token_res,
+        }
 
     @classmethod
     async def async_exchange_code(
@@ -290,43 +449,54 @@ class AmwayApiClient:
             "client_secret": CLIENT_SECRET,
             "scope": DEFAULT_SCOPES,
         }
-        async with session.post(GLUU_TOKEN_ENDPOINT, data=data) as resp:
+        headers = {"accept-encoding": "gzip, deflate"}
+        async with session.post(GLUU_TOKEN_ENDPOINT, data=data, headers=headers) as resp:
             resp.raise_for_status()
             return await resp.json()
 
     async def async_refresh_token(self) -> Dict[str, Any]:
-        """Refresh the access token using saved credentials or refresh_token."""
+        """Refresh the access token using saved refresh_token or fall back to stored credentials."""
+        if self.refresh_token:
+            try:
+                data = {
+                    "grant_type": "refresh_token",
+                    "refresh_token": self.refresh_token,
+                    "client_id": CLIENT_ID,
+                    "client_secret": CLIENT_SECRET,
+                    "scope": DEFAULT_SCOPES,
+                }
+                headers = {"accept-encoding": "gzip, deflate"}
+                async with self._session.post(GLUU_TOKEN_ENDPOINT, data=data, headers=headers) as resp:
+                    if resp.status == 200:
+                        tokens = await resp.json()
+                        self.access_token = tokens["access_token"]
+                        if "refresh_token" in tokens:
+                            self.refresh_token = tokens["refresh_token"]
+                        if self._on_token_refreshed:
+                            await self._on_token_refreshed(tokens)
+                        _LOGGER.info("Successfully refreshed Amway token via refresh_token")
+                        return tokens
+                    _LOGGER.warning("Refresh token exchange returned status %s; falling back to re-login", resp.status)
+            except Exception as err:
+                _LOGGER.warning("Error refreshing token with refresh_token: %s; falling back to re-login", err)
+
         if self.username and self.password:
             _LOGGER.info("Re-authenticating Amway session via stored credentials...")
             login_res = await self.async_login_with_password(
                 self._session, self.username, self.password, self.country
             )
             self.access_token = login_res["access_token"]
+            if login_res.get("refresh_token"):
+                self.refresh_token = login_res["refresh_token"]
             if self._on_token_refreshed:
                 await self._on_token_refreshed({
                     "access_token": self.access_token,
                     "refresh_token": self.refresh_token,
+                    "expires_in": login_res.get("expires_in", 3600),
                 })
             return login_res
 
-        if not self.refresh_token:
-            raise ValueError("No refresh_token or credentials available")
-        data = {
-            "grant_type": "refresh_token",
-            "refresh_token": self.refresh_token,
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "scope": DEFAULT_SCOPES,
-        }
-        async with self._session.post(GLUU_TOKEN_ENDPOINT, data=data) as resp:
-            resp.raise_for_status()
-            tokens = await resp.json()
-            self.access_token = tokens["access_token"]
-            if "refresh_token" in tokens:
-                self.refresh_token = tokens["refresh_token"]
-            if self._on_token_refreshed:
-                await self._on_token_refreshed(tokens)
-            return tokens
+        raise ValueError("No valid refresh_token or stored credentials available for token refresh")
 
     async def _async_conex_request(
         self, method: str, endpoint: str, **kwargs: Any
