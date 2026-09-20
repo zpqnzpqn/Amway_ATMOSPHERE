@@ -2,6 +2,7 @@
 .scratch/
 scratch/
 tmp/
+docs/tickets/
 *.log
 amway_traffic.log
 
