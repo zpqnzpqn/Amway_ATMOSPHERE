@@ -18,6 +18,7 @@ import json
 import os
 import socket
 import sys
+from typing import Any, Union
 import urllib.parse
 import urllib.request
 
@@ -55,24 +56,44 @@ def get_local_ip() -> str:
     return ip
 
 
-def print_banner(token: str) -> None:
-    """Print the captured token with clear Home Assistant instructions and copy to clipboard."""
+def print_banner(token_info: Any) -> None:
+    """Print the captured token(s) with clear Home Assistant instructions and copy to clipboard."""
     import subprocess
+
+    if isinstance(token_info, dict):
+        access_token = token_info.get("access_token", "")
+        refresh_token = token_info.get("refresh_token", "")
+        clipboard_payload = json.dumps(
+            {"access_token": access_token, "refresh_token": refresh_token}
+        ) if refresh_token else access_token
+    else:
+        access_token = str(token_info)
+        refresh_token = ""
+        clipboard_payload = access_token
+
     copied_to_clipboard = False
     try:
         p = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE)
-        p.communicate(token.encode("utf-8"))
+        p.communicate(clipboard_payload.encode("utf-8"))
         copied_to_clipboard = True
     except Exception:
         pass
 
     print("\n" + "=" * 70)
-    print("🎉 恭喜！成功捕獲 Amway Conex Access Token！")
+    print("🎉 恭喜！成功捕獲 Amway Conex 授權 Token！")
     print("=" * 70)
     if copied_to_clipboard:
         print("📋 【已自動複製到剪貼簿】直接在 Home Assistant 貼上 (Cmd+V) 即可！\n")
-    print("若需手動複製，Token 如下：\n")
-    print(token)
+
+    print("🔑 Access Token (清淨機連線金鑰)：")
+    print(access_token)
+
+    if refresh_token:
+        print("\n🔄 Refresh Token (永久自動換證金鑰)：")
+        print(refresh_token)
+        print("\n💡 Home Assistant 雙 Token JSON 格式（已複製）：")
+        print(clipboard_payload)
+
     print("\n" + "=" * 70)
     print("⚠️  安全提示：")
     print("1. 請妥善保管您的 Token，切勿公開或上傳至 GitHub。")
@@ -117,7 +138,7 @@ class AmwayTokenInterceptor:
             try:
                 data = json.loads(flow.response.get_text())
                 if "access_token" in data:
-                    print("TOKEN_FOUND:" + data["access_token"], flush=True)
+                    print("JSON_FOUND:" + json.dumps(data), flush=True)
             except Exception:
                 pass
 
@@ -155,10 +176,26 @@ addons = [AmwayTokenInterceptor()]
             bufsize=1,
         )
         for line in proc.stdout:
-            if "TOKEN_FOUND:" in line:
+            if "JSON_FOUND:" in line:
+                raw_json = line.split("JSON_FOUND:")[1].strip()
+                proc.terminate()
+                try:
+                    data = json.loads(raw_json)
+                except Exception:
+                    data = {"access_token": raw_json}
+                scratch_dir = os.path.join(os.path.dirname(__file__), "..", ".scratch")
+                if os.path.exists(scratch_dir):
+                    try:
+                        token_file = os.path.join(scratch_dir, "current_tokens.json")
+                        with open(token_file, "w", encoding="utf-8") as f:
+                            json.dump(data, f, indent=2)
+                    except Exception:
+                        pass
+                print_banner(data)
+                break
+            elif "TOKEN_FOUND:" in line:
                 token = line.split("TOKEN_FOUND:")[1].strip()
                 proc.terminate()
-                # Also save to .scratch/current_tokens.json for convenience
                 scratch_dir = os.path.join(os.path.dirname(__file__), "..", ".scratch")
                 if os.path.exists(scratch_dir):
                     try:
@@ -240,7 +277,15 @@ def run_manual_mode() -> None:
             tokens = json.loads(resp.read().decode())
             token = tokens.get("access_token")
             if token:
-                print_banner(token)
+                scratch_dir = os.path.join(os.path.dirname(__file__), "..", ".scratch")
+                if os.path.exists(scratch_dir):
+                    try:
+                        token_file = os.path.join(scratch_dir, "current_tokens.json")
+                        with open(token_file, "w", encoding="utf-8") as f:
+                            json.dump(tokens, f, indent=2)
+                    except Exception:
+                        pass
+                print_banner(tokens)
             else:
                 print("❌ 換證回傳未包含 access_token：", tokens)
     except Exception as err:

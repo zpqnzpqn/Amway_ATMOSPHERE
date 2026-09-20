@@ -58,39 +58,106 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        """Handle initial step: Direct Phone/Username + Password or Access Token."""
+        """Handle initial step: Official OAuth Code, Access Token / JSON, or Phone + Password."""
         errors: Dict[str, str] = {}
 
         if user_input is not None:
-            token = user_input.get(CONF_ACCESS_TOKEN, "").strip()
+            raw_auth_code = user_input.get(CONF_AUTH_CODE, "").strip()
+            raw_token = user_input.get(CONF_ACCESS_TOKEN, "").strip()
             raw_username = user_input.get(CONF_USERNAME, "").strip()
             password = user_input.get(CONF_PASSWORD, "").strip()
             country = user_input.get(CONF_COUNTRY, DEFAULT_COUNTRY).strip().upper()
 
             session = async_get_clientsession(self.hass)
 
-            # Option A: Direct Token Login (Recommended)
-            if token:
-                try:
-                    client = AmwayApiClient(session=session, access_token=token)
-                    devices = await client.async_get_devices()
-                    
-                    unique_id = f"amway_atmosphere_{devices[0].thing_id if devices else 'token'}"
-                    await self.async_set_unique_id(unique_id)
-                    self._abort_if_unique_id_configured()
+            # Option 1: Official OAuth Code / Redirect URL (Recommended - Has Refresh Token)
+            if raw_auth_code:
+                auth_code = _extract_code(raw_auth_code)
+                if not auth_code:
+                    errors[CONF_AUTH_CODE] = "invalid_auth_code"
+                else:
+                    try:
+                        tokens = await AmwayApiClient.async_exchange_code(
+                            session, auth_code
+                        )
+                        access_token = tokens["access_token"]
+                        refresh_token = tokens.get("refresh_token")
+                        expires_in = tokens.get("expires_in", 3600)
+                        expires_at = time.time() + expires_in
 
-                    return self.async_create_entry(
-                        title=f"Amway Atmosphere ({devices[0].device_name if devices else 'Token'})",
-                        data={
-                            CONF_ACCESS_TOKEN: token,
-                            CONF_EXPIRES_AT: time.time() + 86400 * 365,
-                        },
+                        client = AmwayApiClient(
+                            session=session,
+                            access_token=access_token,
+                            refresh_token=refresh_token,
+                            country=country,
+                        )
+                        devices = await client.async_get_devices()
+                        if not devices:
+                            errors["base"] = "no_devices_found"
+                        else:
+                            unique_id = f"amway_atmosphere_{devices[0].thing_id}"
+                            await self.async_set_unique_id(unique_id)
+                            self._abort_if_unique_id_configured()
+
+                            return self.async_create_entry(
+                                title=f"Amway Atmosphere ({devices[0].device_name})",
+                                data={
+                                    CONF_ACCESS_TOKEN: access_token,
+                                    CONF_REFRESH_TOKEN: refresh_token,
+                                    CONF_COUNTRY: country,
+                                    CONF_EXPIRES_AT: expires_at,
+                                },
+                            )
+                    except Exception as err:
+                        _LOGGER.exception("Failed to authenticate with Amway code: %s", err)
+                        errors["base"] = "invalid_auth_code"
+
+            # Option 2: Direct Access Token or JSON Token Payload
+            elif raw_token:
+                access_token = raw_token
+                refresh_token = None
+                expires_at = time.time() + 86400 * 365
+
+                if raw_token.startswith("{") and "access_token" in raw_token:
+                    try:
+                        import json as py_json
+                        token_dict = py_json.loads(raw_token)
+                        access_token = token_dict.get("access_token", raw_token)
+                        refresh_token = token_dict.get("refresh_token")
+                        if "expires_in" in token_dict:
+                            expires_at = time.time() + token_dict["expires_in"]
+                    except Exception:
+                        pass
+
+                try:
+                    client = AmwayApiClient(
+                        session=session,
+                        access_token=access_token,
+                        refresh_token=refresh_token,
+                        country=country,
                     )
+                    devices = await client.async_get_devices()
+                    if not devices:
+                        errors["base"] = "no_devices_found"
+                    else:
+                        unique_id = f"amway_atmosphere_{devices[0].thing_id}"
+                        await self.async_set_unique_id(unique_id)
+                        self._abort_if_unique_id_configured()
+
+                        return self.async_create_entry(
+                            title=f"Amway Atmosphere ({devices[0].device_name})",
+                            data={
+                                CONF_ACCESS_TOKEN: access_token,
+                                CONF_REFRESH_TOKEN: refresh_token,
+                                CONF_COUNTRY: country,
+                                CONF_EXPIRES_AT: expires_at,
+                            },
+                        )
                 except Exception as err:
                     _LOGGER.exception("Failed to connect Amway with provided token: %s", err)
                     errors[CONF_ACCESS_TOKEN] = "invalid_auth"
 
-            # Option B: Direct Username and Password Login
+            # Option 3: Direct Phone/Username and Password Login
             elif raw_username and password:
                 try:
                     login_res = await AmwayApiClient.async_login_with_password(
@@ -111,23 +178,32 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         password=password,
                         country=country,
                     )
-                    await client.async_get_devices()
+                    devices = await client.async_get_devices()
 
-                    unique_id = f"amway_atmosphere_{party_id or norm_username}"
-                    await self.async_set_unique_id(unique_id)
-                    self._abort_if_unique_id_configured()
+                    # Check device discovery: Amway web token lacks durables scopes
+                    if not devices:
+                        _LOGGER.warning(
+                            "Amway account '%s' authenticated successfully, but Conex returned 0 devices. "
+                            "Amway IoT requires official Healthy Home App OAuth authorization.",
+                            norm_username,
+                        )
+                        errors["base"] = "no_devices_found"
+                    else:
+                        unique_id = f"amway_atmosphere_{party_id or devices[0].thing_id or norm_username}"
+                        await self.async_set_unique_id(unique_id)
+                        self._abort_if_unique_id_configured()
 
-                    return self.async_create_entry(
-                        title=f"Amway Atmosphere ({norm_username})",
-                        data={
-                            CONF_USERNAME: norm_username,
-                            CONF_PASSWORD: password,
-                            CONF_COUNTRY: country,
-                            CONF_ACCESS_TOKEN: access_token,
-                            CONF_PARTY_ID: party_id,
-                            CONF_EXPIRES_AT: time.time() + 86400 * 30,
-                        },
-                    )
+                        return self.async_create_entry(
+                            title=f"Amway Atmosphere ({devices[0].device_name})",
+                            data={
+                                CONF_USERNAME: norm_username,
+                                CONF_PASSWORD: password,
+                                CONF_COUNTRY: country,
+                                CONF_ACCESS_TOKEN: access_token,
+                                CONF_PARTY_ID: party_id,
+                                CONF_EXPIRES_AT: time.time() + 86400 * 30,
+                            },
+                        )
                 except Exception as err:
                     _LOGGER.exception("Failed to authenticate with Amway credentials: %s", err)
                     err_msg = str(err).lower()
@@ -135,18 +211,23 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         errors["base"] = "invalid_auth"
                     else:
                         errors["base"] = "cannot_connect"
+            else:
+                errors["base"] = "missing_credentials_or_token"
+
         schema = vol.Schema(
             {
-                vol.Optional(CONF_USERNAME, default="09"): str,
+                vol.Optional(CONF_AUTH_CODE): str,
+                vol.Optional(CONF_ACCESS_TOKEN): str,
+                vol.Optional(CONF_USERNAME): str,
                 vol.Optional(CONF_PASSWORD): str,
                 vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): str,
-                vol.Optional(CONF_ACCESS_TOKEN): str,
             }
         )
 
         return self.async_show_form(
             step_id="user",
             data_schema=schema,
+            description_placeholders={"auth_url": self._auth_url},
             errors=errors,
         )
 

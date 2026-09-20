@@ -3,12 +3,13 @@
     "step": {
       "user": {
         "title": "Connect to Amway Atmosphere",
-        "description": "Please enter your registered Amway mobile phone number and password.\n(Supports Taiwan format: 09xxxxxxxx or +8869xxxxxxxx)\n\n💡 If you already have an Access Token, you can also paste it into the optional token field below.",
+        "description": "Please choose one of the following methods to connect your Atmosphere purifier:\n\n⭐ **Method 1: Official OAuth Authorization (Recommended, Auto-refreshes forever)**\n1. Open the official login portal in your browser:\n[👉 Click here to sign in on Amway Official Portal]({auth_url})\n2. After sign in, the browser will attempt to redirect to `amwayhealthyhome://loginRedirect?code=...`.\n3. Copy the full redirect URL (or just the `code`) and paste it into the 'Authorization Code or URL' field below.\n\n💡 **Method 2: Token Assistant Tool**\nRun `python3 tools/get_token.py` in this repo to capture token or JSON string, then paste into 'Access Token or JSON' below.\n\n📱 **Method 3: Phone Number & Password**\nEnter your registered phone number and password (if restricted by Amway cloud, please use Method 1).",
         "data": {
-          "username": "Phone Number",
-          "password": "Password",
-          "country": "Country Code (Default TW)",
-          "access_token": "(Optional) Access Token"
+          "auth_code": "(Recommended) Official Authorization Code or Redirect URL",
+          "access_token": "(Optional) Access Token or JSON Payload",
+          "username": "Phone Number (if using password)",
+          "password": "Password (if using password)",
+          "country": "Country Code (Default TW)"
         }
       },
       "manual_code": {
@@ -29,10 +30,12 @@
     "error": {
       "cannot_connect": "Failed to connect to Amway cloud servers.",
       "invalid_auth": "Invalid phone number or password. Please verify your credentials.",
-      "invalid_auth_code": "Invalid token or authorization code.",
+      "invalid_auth_code": "Invalid token or authorization code. Please verify the copied redirect URL.",
       "invalid_username": "Please enter a valid phone number.",
       "invalid_password": "Password cannot be empty.",
-      "missing_credentials_or_token": "Please enter your phone number and password, or provide an Access Token.",
+      "missing_credentials_or_token": "Please provide an Authorization Code, Access Token, or Phone Number & Password.",
+      "no_devices_found": "No Atmosphere air purifiers found for this account! Amway cloud restricts durables access to Healthy Home App. Please use Method 1 (Official OAuth Code) above.",
+      "oauth_required": "Amway cloud requires official Healthy Home App authorization. Please use the official OAuth code.",
       "unknown": "An unexpected error occurred."
     },
     "abort": {

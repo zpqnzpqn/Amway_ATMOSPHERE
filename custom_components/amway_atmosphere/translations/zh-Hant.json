@@ -3,12 +3,13 @@
     "step": {
       "user": {
         "title": "連線至安麗逸新空氣清淨機 (Amway Atmosphere)",
-        "description": "請輸入您註冊安麗帳號的手機號碼與密碼以完成連線。\n（支援台灣手機格式：09xxxxxxxx 或 +8869xxxxxxxx）\n\n💡 若您已有 Access Token，亦可直接在下方「Access Token」欄位填入完成快速連線。",
+        "description": "請選擇以下任一種方式連線您的安麗清淨機：\n\n⭐ **方式 1：官方 OAuth 授權（推薦，永久自動換證）**\n1. 點擊開啟官方登入頁面：\n[👉 點此前往安麗官方登入頁面]({auth_url})\n2. 登入後，瀏覽器將嘗試跳轉至 `amwayhealthyhome://loginRedirect?code=...`。\n3. 請複製該網址列的完整網址（或 code 代碼）貼入下方的「官方授權跳轉碼 (Code)」欄位。\n\n💡 **方式 2：使用 Token 輔助工具**\n執行本專案 `python3 tools/get_token.py` 取得 Token 或 JSON 字串，直接貼入下方「Access Token 或 JSON」欄位。\n\n📱 **方式 3：手機號碼與密碼**\n填入安麗手機號碼與密碼（若安麗雲端要求 App 授權限制，請改用方式 1）。",
         "data": {
-          "username": "手機號碼",
-          "password": "密碼",
-          "country": "國家 / 地區代碼（預設 TW）",
-          "access_token": "（選填）Access Token"
+          "auth_code": "（推薦）官方授權跳轉碼 (Code) 或完整網址",
+          "access_token": "（選填）Access Token 或 JSON 負載",
+          "username": "手機號碼（若使用帳密）",
+          "password": "密碼（若使用帳密）",
+          "country": "國家 / 地區代碼（預設 TW）"
         }
       },
       "manual_code": {
@@ -29,10 +30,12 @@
     "error": {
       "cannot_connect": "無法連線至安麗伺服器，請檢查網路連線。",
       "invalid_auth": "手機號碼或密碼錯誤，請重新確認。",
-      "invalid_auth_code": "無效的 Token 或授權碼。",
+      "invalid_auth_code": "無效的 Token 或授權碼，請確認已完整複製跳轉網址。",
       "invalid_username": "請輸入正確格式的手機號碼。",
       "invalid_password": "密碼不能為空。",
-      "missing_credentials_or_token": "請輸入手機號碼與密碼，或填入 Access Token。",
+      "missing_credentials_or_token": "請填寫「官方授權碼」、「Token」或「手機號碼與密碼」其中一種方式。",
+      "no_devices_found": "未在此帳號下發現任何空氣清淨機！安麗雲端要求耐久財家電必須具備官方 Healthy Home 授權，請改用「方式 1：官方 OAuth 授權」點擊上方連結完成登入。",
+      "oauth_required": "安麗雲端要求清淨機必須具備 Healthy Home 官方授權，請改用官方授權碼登入。",
       "unknown": "發生未預期的錯誤。"
     },
     "abort": {

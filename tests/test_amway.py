@@ -934,3 +934,181 @@ class TestAmwayModeSwitches:
         asyncio.run(_run())
 
 
+class TestAmwayAuthAndTokenLifecycle:
+    """TDD tests for OAuth code exchange, token refresh, and login guardrails."""
+
+    def test_oauth_code_flow_exchanges_tokens_and_stores_refresh_token(self):
+        import asyncio
+        import time
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+        from custom_components.amway_atmosphere.config_flow import AmwayAtmosphereConfigFlow
+        from custom_components.amway_atmosphere.const import (
+            CONF_ACCESS_TOKEN,
+            CONF_AUTH_CODE,
+            CONF_EXPIRES_AT,
+            CONF_REFRESH_TOKEN,
+        )
+
+        async def _run():
+            flow = AmwayAtmosphereConfigFlow()
+            flow.hass = MagicMock()
+
+            mock_tokens = {
+                "access_token": "mock-oauth-access-token",
+                "refresh_token": "mock-oauth-refresh-token",
+                "expires_in": 3600,
+            }
+            mock_device = AtmosphereDeviceState(
+                thing_id="sky-test-01",
+                thing_type=MODEL_SKY,
+                device_name="Atmosphere Sky™ Air Treatment System",
+            )
+
+            with patch.object(
+                AmwayApiClient, "async_exchange_code", AsyncMock(return_value=mock_tokens)
+            ) as mock_exchange, patch.object(
+                AmwayApiClient, "async_get_devices", AsyncMock(return_value=[mock_device])
+            ):
+                result = await flow.async_step_user(
+                    {CONF_AUTH_CODE: "amwayhealthyhome://loginRedirect?code=test_code_12345"}
+                )
+
+                mock_exchange.assert_called_once()
+                assert result["type"] == "create_entry"
+                assert result["title"] == "Amway Atmosphere (Atmosphere Sky™ Air Treatment System)"
+                assert result["data"][CONF_ACCESS_TOKEN] == "mock-oauth-access-token"
+                assert result["data"][CONF_REFRESH_TOKEN] == "mock-oauth-refresh-token"
+                assert result["data"][CONF_EXPIRES_AT] > time.time()
+
+        asyncio.run(_run())
+
+    def test_json_token_payload_with_refresh_token(self):
+        import asyncio
+        import json
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+        from custom_components.amway_atmosphere.config_flow import AmwayAtmosphereConfigFlow
+        from custom_components.amway_atmosphere.const import (
+            CONF_ACCESS_TOKEN,
+            CONF_REFRESH_TOKEN,
+        )
+
+        async def _run():
+            flow = AmwayAtmosphereConfigFlow()
+            flow.hass = MagicMock()
+
+            json_payload = json.dumps({
+                "access_token": "json-jwt-access-token",
+                "refresh_token": "json-refresh-token-xyz",
+                "expires_in": 7200,
+            })
+            mock_device = AtmosphereDeviceState(
+                thing_id="mini-test-01",
+                thing_type=MODEL_MINI,
+                device_name="Atmosphere Mini™ Air Treatment System",
+            )
+
+            with patch.object(
+                AmwayApiClient, "async_get_devices", AsyncMock(return_value=[mock_device])
+            ):
+                result = await flow.async_step_user({CONF_ACCESS_TOKEN: json_payload})
+
+                assert result["type"] == "create_entry"
+                assert result["title"] == "Amway Atmosphere (Atmosphere Mini™ Air Treatment System)"
+                assert result["data"][CONF_ACCESS_TOKEN] == "json-jwt-access-token"
+                assert result["data"][CONF_REFRESH_TOKEN] == "json-refresh-token-xyz"
+
+        asyncio.run(_run())
+
+    def test_username_password_no_devices_found_blocks_entry_creation(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+        from custom_components.amway_atmosphere.config_flow import AmwayAtmosphereConfigFlow
+        from custom_components.amway_atmosphere.const import (
+            CONF_PASSWORD,
+            CONF_USERNAME,
+        )
+
+        async def _run():
+            flow = AmwayAtmosphereConfigFlow()
+            flow.hass = MagicMock()
+
+            mock_login_res = {
+                "access_token": "web-session-token-without-durables",
+                "username": "+886912345678",
+                "party_id": "90436550",
+            }
+
+            with patch.object(
+                AmwayApiClient, "async_login_with_password", AsyncMock(return_value=mock_login_res)
+            ), patch.object(
+                AmwayApiClient, "async_get_devices", AsyncMock(return_value=[])
+            ):
+                # When user enters username and password, but Conex API returns 0 devices
+                result = await flow.async_step_user({
+                    CONF_USERNAME: "0912345678",
+                    CONF_PASSWORD: "user_secret_password",
+                })
+
+                # Must NOT create entry; must show form with no_devices_found error
+                assert result["type"] == "form"
+                assert result["errors"]["base"] == "no_devices_found"
+
+        asyncio.run(_run())
+
+    def test_token_refresh_lifecycle_and_callback(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+
+        async def _run():
+            session = MagicMock()
+            mock_callback = AsyncMock()
+
+            client = AmwayApiClient(
+                session=session,
+                access_token="initial-access-token",
+                refresh_token="valid-refresh-token",
+                on_token_refreshed=mock_callback,
+            )
+
+            new_tokens = {
+                "access_token": "newly-refreshed-access-token",
+                "refresh_token": "renewed-refresh-token",
+                "expires_in": 3600,
+            }
+
+            mock_resp = AsyncMock()
+            mock_resp.status = 200
+            mock_resp.json = AsyncMock(return_value=new_tokens)
+            mock_resp.raise_for_status = MagicMock()
+
+            # Mock context manager for session.post
+            session.post.return_value.__aenter__.return_value = mock_resp
+
+            tokens = await client.async_refresh_token()
+            assert client.access_token == "newly-refreshed-access-token"
+            assert client.refresh_token == "renewed-refresh-token"
+            mock_callback.assert_called_once_with(new_tokens)
+
+        asyncio.run(_run())
+
+    def test_tools_get_token_print_banner_and_payload(self):
+        import json
+        from tools.get_token import print_banner
+
+        # Test dictionary payload with refresh_token
+        dict_payload = {
+            "access_token": "test-access-token",
+            "refresh_token": "test-refresh-token",
+        }
+        # Verify it executes cleanly without exceptions
+        print_banner(dict_payload)
+
+        # Test single string token
+        print_banner("plain-string-token")
+
+
+
