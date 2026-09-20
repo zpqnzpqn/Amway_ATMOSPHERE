@@ -59,9 +59,9 @@
         "state_attributes": {
           "preset_mode": {
             "state": {
-              "Auto": "Auto",
-              "Night": "Night",
-              "Turbo": "Turbo"
+              "auto": "Auto",
+              "night": "Night",
+              "turbo": "Turbo"
             }
           }
         }

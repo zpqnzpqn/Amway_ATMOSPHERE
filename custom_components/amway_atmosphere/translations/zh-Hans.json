@@ -59,9 +59,9 @@
         "state_attributes": {
           "preset_mode": {
             "state": {
-              "Auto": "自动模式",
-              "Night": "夜间模式",
-              "Turbo": "强效 (Turbo)"
+              "auto": "自动模式",
+              "night": "夜间模式",
+              "turbo": "强效 (Turbo)"
             }
           }
         }

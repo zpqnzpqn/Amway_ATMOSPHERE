@@ -42,9 +42,9 @@
         "state_attributes": {
           "preset_mode": {
             "state": {
-              "Auto": "自動",
-              "Night": "夜間",
-              "Turbo": "ターボ"
+              "auto": "自動",
+              "night": "夜間",
+              "turbo": "ターボ"
             }
           }
         }
