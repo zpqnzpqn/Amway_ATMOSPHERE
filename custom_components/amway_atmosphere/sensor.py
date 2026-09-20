@@ -117,12 +117,15 @@ class AmwayAtmosphereSensorBase(
             if (dev and dev.device_name)
             else (DEFAULT_NAME_MINI if (dev and dev.is_mini) else DEFAULT_NAME_SKY)
         )
-        model_name = "Atmosphere Sky" if (dev and dev.is_sky) else "Atmosphere Mini"
+        model_name = (
+            DEFAULT_NAME_SKY if (dev and dev.is_sky) else DEFAULT_NAME_MINI
+        )
         return DeviceInfo(
             identifiers={(DOMAIN, self._thing_id)},
             name=device_name,
             manufacturer="Amway",
             model=model_name,
+            serial_number=self._thing_id,
             configuration_url="https://www.amway.com.tw/sky/",
         )
 
@@ -131,6 +134,14 @@ class AmwayAtmosphereSensorBase(
         """Return True if device is connected."""
         dev = self._device
         return dev is not None and dev.connected
+
+    @property
+    def extra_state_attributes(self) -> Dict[str, Any]:
+        """Return base extra state attributes including serial_number."""
+        return {
+            "serial_number": self._thing_id,
+            "thing_id": self._thing_id,
+        }
 
 
 class AmwayAirQualitySensor(AmwayAtmosphereSensorBase):
@@ -157,13 +168,14 @@ class AmwayAirQualitySensor(AmwayAtmosphereSensorBase):
     @property
     def extra_state_attributes(self) -> Dict[str, Any]:
         """Extra air quality attributes."""
+        attrs = dict(super().extra_state_attributes)
         dev = self._device
-        if not dev:
-            return {}
-        return {
-            "dust_level": dev.dust_level,
-            "clean_air_val": dev.clean_air_val,
-        }
+        if dev:
+            attrs.update({
+                "dust_level": dev.dust_level,
+                "clean_air_val": dev.clean_air_val,
+            })
+        return attrs
 
 
 class AmwayCleanAirSensor(AmwayAtmosphereSensorBase):

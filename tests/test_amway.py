@@ -122,21 +122,86 @@ class TestAmwayAuth:
             assert sky_dev.device_name == "Atmosphere Sky™ Air Treatment System"
             assert mini_dev.device_name == "Atmosphere Mini™ Air Treatment System"
 
-            # 2. Fan and Sensor device_info name strictly match
+            # 2. Fan and Sensor device_info name, model and serial_number strictly match
             coordinator = MagicMock()
             coordinator.data = {sky_dev.thing_id: sky_dev, mini_dev.thing_id: mini_dev}
 
             fan_sky = AmwayAtmosphereFan(coordinator, sky_dev.thing_id)
             sensor_sky = AmwayAirQualitySensor(coordinator, sky_dev.thing_id)
             assert fan_sky.device_info["name"] == "Atmosphere Sky™ Air Treatment System"
+            assert fan_sky.device_info["model"] == "Atmosphere Sky™ Air Treatment System"
+            assert fan_sky.device_info["serial_number"] == "SKY_DEVICE_01"
+            assert fan_sky.extra_state_attributes["serial_number"] == "SKY_DEVICE_01"
+
             assert sensor_sky.device_info["name"] == "Atmosphere Sky™ Air Treatment System"
+            assert sensor_sky.device_info["model"] == "Atmosphere Sky™ Air Treatment System"
+            assert sensor_sky.device_info["serial_number"] == "SKY_DEVICE_01"
+            assert sensor_sky.extra_state_attributes["serial_number"] == "SKY_DEVICE_01"
 
             fan_mini = AmwayAtmosphereFan(coordinator, mini_dev.thing_id)
             sensor_mini = AmwayAirQualitySensor(coordinator, mini_dev.thing_id)
             assert fan_mini.device_info["name"] == "Atmosphere Mini™ Air Treatment System"
+            assert fan_mini.device_info["model"] == "Atmosphere Mini™ Air Treatment System"
+            assert fan_mini.device_info["serial_number"] == "MINI_DEVICE_02"
+            assert fan_mini.extra_state_attributes["serial_number"] == "MINI_DEVICE_02"
+
             assert sensor_mini.device_info["name"] == "Atmosphere Mini™ Air Treatment System"
+            assert sensor_mini.device_info["model"] == "Atmosphere Mini™ Air Treatment System"
+            assert sensor_mini.device_info["serial_number"] == "MINI_DEVICE_02"
+            assert sensor_mini.extra_state_attributes["serial_number"] == "MINI_DEVICE_02"
 
         asyncio.run(_run())
+
+    def test_auto_mode_speed_display_and_manual_switch_unlock(self):
+        """Test Plan A: Auto mode tracks live speed percentage; manual percentage adjustment clears all 3 locks."""
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
+
+        async def _run():
+            coordinator = MagicMock()
+            dev = AtmosphereDeviceState(
+                thing_id="sky-001",
+                thing_type=MODEL_SKY,
+                device_name="Atmosphere Sky™ Air Treatment System",
+                connected=True,
+                speed=1,
+                dust_level=1,
+                mode=1,  # Auto mode
+                clean_air_val=100,
+                prefilter_life_left=90,
+                hepa_life_left=95,
+                carbon_life_left=80,
+                child_lock=False,
+                raw_shadow={},
+            )
+            coordinator.data = {"sky-001": dev}
+            coordinator.async_send_remote_button = AsyncMock()
+
+            fan = AmwayAtmosphereFan(coordinator, "sky-001")
+
+            # 1. In Auto mode at Speed 1 -> preset is Auto, percentage is 20%
+            assert fan.preset_mode == PRESET_MODE_AUTO
+            assert fan.percentage == 20
+
+            # 2. Air quality worsens -> Purifier automatically speeds up to Speed 4
+            dev.speed = 4
+            assert fan.preset_mode == PRESET_MODE_AUTO
+            assert fan.percentage == 80
+
+            # 3. User manually adjusts percentage to 40% (Speed 2)
+            await fan.async_set_percentage(40)
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Speed2")
+
+            # 4. Cloud shadow switches mode to Manual (mode = 0)
+            dev.mode = 0
+            dev.speed = 2
+            assert fan.percentage == 40
+            # All three locks (Auto, Night, Turbo) are OFF (preset_mode is None)
+            assert fan.preset_mode is None
+
+        asyncio.run(_run())
+
 
 
 

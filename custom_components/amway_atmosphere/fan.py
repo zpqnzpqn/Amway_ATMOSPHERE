@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from homeassistant.components.fan import (
     FanEntity,
@@ -86,12 +86,15 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
             if (dev and dev.device_name)
             else (DEFAULT_NAME_MINI if (dev and dev.is_mini) else DEFAULT_NAME_SKY)
         )
-        model_name = "Atmosphere Sky" if (dev and dev.is_sky) else "Atmosphere Mini"
+        model_name = (
+            DEFAULT_NAME_SKY if (dev and dev.is_sky) else DEFAULT_NAME_MINI
+        )
         return DeviceInfo(
             identifiers={(DOMAIN, self._thing_id)},
             name=device_name,
             manufacturer="Amway",
             model=model_name,
+            serial_number=self._thing_id,
             configuration_url="https://www.amway.com.tw/sky/",
         )
 
@@ -250,3 +253,25 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
         """Turn off the air purifier."""
         if self.is_on:
             await self.coordinator.async_send_remote_button(self._thing_id, "Power")
+
+    @property
+    def extra_state_attributes(self) -> Dict[str, Any]:
+        """Return entity specific state attributes."""
+        dev = self._device
+        attrs = {
+            "serial_number": self._thing_id,
+            "thing_id": self._thing_id,
+        }
+        if dev:
+            attrs["speed_step"] = dev.speed
+            attrs["mode_raw"] = dev.mode
+            if dev.mode == 1:
+                attrs["operating_mode"] = "Auto"
+            elif dev.mode == 2:
+                attrs["operating_mode"] = "Night"
+            elif dev.mode == 3:
+                attrs["operating_mode"] = "Turbo"
+            else:
+                attrs["operating_mode"] = "Manual"
+        return attrs
+
