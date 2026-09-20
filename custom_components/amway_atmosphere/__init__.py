@@ -26,7 +26,7 @@ from .coordinator import AmwayAtmosphereCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: List[str] = ["fan", "sensor"]
+PLATFORMS: List[str] = ["fan", "sensor", "switch"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

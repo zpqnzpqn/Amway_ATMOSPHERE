@@ -814,3 +814,123 @@ class TestDirectAuthClient:
         assert isinstance(ip, str)
         assert len(ip.split(".")) == 4
 
+
+class TestAmwayModeSwitches:
+    """Test Auto, Night, and Turbo mode switches with mutual locking."""
+
+    def test_sky_mode_switches_lifecycle(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.switch import (
+            AmwayAutoModeSwitch,
+            AmwayNightModeSwitch,
+            AmwayTurboModeSwitch,
+        )
+
+        async def _run():
+            coordinator = MagicMock()
+            dev = AtmosphereDeviceState(
+                thing_id="sky-001",
+                thing_type=MODEL_SKY,
+                device_name="Atmosphere Sky™ Air Treatment System",
+                connected=True,
+                speed=2,
+                dust_level=1,
+                mode=1,  # Auto mode
+                clean_air_val=200,
+                prefilter_life_left=90,
+                hepa_life_left=95,
+                carbon_life_left=80,
+                child_lock=False,
+                raw_shadow={},
+            )
+            coordinator.data = {"sky-001": dev}
+            coordinator.async_send_remote_button = AsyncMock()
+
+            sw_auto = AmwayAutoModeSwitch(coordinator, "sky-001")
+            sw_night = AmwayNightModeSwitch(coordinator, "sky-001")
+            sw_turbo = AmwayTurboModeSwitch(coordinator, "sky-001")
+
+            # 1. Device info check
+            assert sw_auto.device_info["name"] == "Atmosphere Sky™ Air Treatment System"
+            assert sw_auto.device_info["model"] == "Atmosphere Sky™ Air Treatment System"
+            assert sw_auto.device_info["serial_number"] == "sky-001"
+
+            # 2. Initial state: Auto is ON, Night and Turbo are OFF
+            assert sw_auto.is_on is True
+            assert sw_night.is_on is False
+            assert sw_turbo.is_on is False
+
+            # 3. Turn on Night mode
+            await sw_night.async_turn_on()
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Night")
+
+            # Update reported mode to Night (mode=2)
+            dev.mode = 2
+            assert sw_auto.is_on is False
+            assert sw_night.is_on is True
+            assert sw_turbo.is_on is False
+
+            # 4. Turn on Turbo mode
+            coordinator.async_send_remote_button.reset_mock()
+            await sw_turbo.async_turn_on()
+            coordinator.async_send_remote_button.assert_called_with("sky-001", "Turbo")
+
+            # Update reported mode to Turbo (mode=3)
+            dev.mode = 3
+            assert sw_auto.is_on is False
+            assert sw_night.is_on is False
+            assert sw_turbo.is_on is True
+
+            # 5. Manual speed adjustment (reverting mode to 0): All 3 switches are OFF
+            dev.mode = 0
+            dev.speed = 3
+            assert sw_auto.is_on is False
+            assert sw_night.is_on is False
+            assert sw_turbo.is_on is False
+
+        asyncio.run(_run())
+
+    def test_mini_mode_switches(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.switch import (
+            AmwayAutoModeSwitch,
+            AmwayNightModeSwitch,
+            AmwayTurboModeSwitch,
+        )
+
+        async def _run():
+            coordinator = MagicMock()
+            dev = AtmosphereDeviceState(
+                thing_id="mini-001",
+                thing_type=MODEL_MINI,
+                device_name="Atmosphere Mini™ Air Treatment System",
+                connected=True,
+                speed=1,
+                dust_level=1,
+                mode=2,  # Night mode
+                clean_air_val=100,
+                prefilter_life_left=90,
+                hepa_life_left=95,
+                carbon_life_left=None,
+                child_lock=False,
+                raw_shadow={},
+            )
+            coordinator.data = {"mini-001": dev}
+            coordinator.async_send_remote_button = AsyncMock()
+
+            sw_auto = AmwayAutoModeSwitch(coordinator, "mini-001")
+            sw_night = AmwayNightModeSwitch(coordinator, "mini-001")
+            sw_turbo = AmwayTurboModeSwitch(coordinator, "mini-001")
+
+            assert sw_auto.is_on is False
+            assert sw_night.is_on is True
+            # Turbo is always False on Mini and raises error if turned on
+            assert sw_turbo.is_on is False
+            with pytest.raises(ValueError):
+                await sw_turbo.async_turn_on()
+
+        asyncio.run(_run())
+
+

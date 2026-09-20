@@ -58,6 +58,43 @@ python3 tools/get_token.py
 
 ---
 
+---
+
+## 🍏 Apple HomeKit 完美設定教學 (type: air_purifier)
+
+本整合完全相容 Apple HomeKit 原生規範，可將安麗空氣清淨機以 **原生空氣清淨機 (Air Purifier)** 形式橋接至 Apple「家庭」App，並透過獨立感測器與互鎖開關達成極致體驗：
+
+### 1. configuration.yaml 設定範例
+在您的 Home Assistant `configuration.yaml` 中，加入 HomeKit 橋接設定：
+
+```yaml
+homekit:
+  - name: "Amway HomeKit Bridge"
+    port: 21064
+    mode: bridge
+    filter:
+      include_entities:
+        - fan.atmosphere_sky_air_treatment_system
+        - switch.atmosphere_sky_air_treatment_system_auto_mode
+        - switch.atmosphere_sky_air_treatment_system_night_mode
+        - switch.atmosphere_sky_air_treatment_system_turbo_mode
+        - sensor.atmosphere_sky_air_treatment_system_air_quality
+        - sensor.atmosphere_sky_air_treatment_system_hepa_filter_life
+    entity_config:
+      fan.atmosphere_sky_air_treatment_system:
+        type: air_purifier
+```
+
+### 2. 功能特點
+* **Apple 原生空氣清淨機圖標**：不再顯示為電風扇，具備專屬淨化器動畫與自動/手動切換開關。
+* **三開關嚴格互鎖**：`Auto Mode`、`Night Mode`、`Turbo Mode` 開關具備單選互鎖特性。手動調整風速滑桿時，三個開關自動全部彈回關閉 (OFF)。
+* **Siri 語音極致聲控**：可直接使用 Siri 控制：
+  * *「嘿 Siri，打開空氣清淨機的夜間模式」*
+  * *「嘿 Siri，將空氣清淨機風速設為 60%」*
+* **感測器獨立分類**：空氣品質（1~5級）與濾網壽命可在 HomeKit 作為獨立配件顯示於家庭 App 的「環境」與設備面板中。
+
+---
+
 ## ❓ 常見問題 (FAQ)
 
 ### Q1：使用 Access Token 連線安全嗎？
@@ -65,9 +102,9 @@ python3 tools/get_token.py
 使用 Access Token 登入的最大優勢在於：**您完全不需要將您的安麗帳號與登入密碼儲存在 Home Assistant 中**。Token 僅具備讀取與控制設備的專屬權限，不會暴露您的付款或個人敏感資料。
 
 ### Q2：Token 會過期嗎？過期了怎麼辦？
-官方 Token 有效期約為數個月至一年。若日後 Token 失效導致設備離線，只需重新執行一次 `python3 tools/get_token.py --proxy`，並在 Home Assistant 點選該整合的 **「重新認證 (Re-authenticate)」** 貼上最新 Token 即可無縫復原，原有自動化設定與卡片完全不受影響！
+官方 Token 有效期約為數個月至一年。若日後 Token 失效導致設備離線，只需重新執行一次 `python3 tools/get_token.py`，並在 Home Assistant 點選該整合的 **「重新認證 (Re-authenticate)」** 貼上最新 Token 即可無縫復原，原有自動化設定與卡片完全不受影響！
 
 ### Q3：支援哪些設備型號？
-* **Atmosphere Sky (大台逸新空氣清淨機)**：完整支援 5 段風速、自動/夜間/超速模式切換、前置濾網、HEPA濾網、活性碳氣味濾網壽命監控、粉塵空氣品質指數。
-* **Atmosphere Mini (小台逸新迷你清淨機)**：完整支援 3 段風速、自動/夜間模式切換、二合一濾網壽命監控。
-* 原生相容 **Apple HomeKit** 橋接，支援將清淨機與空氣品質感測器獨立顯示於 Apple「家庭」App。
+* **Atmosphere Sky™ Air Treatment System**：完整支援 5 段風速、自動/夜間/強效三開關互鎖、前置/HEPA/碳濾網壽命監控、粉塵空氣品質指數。
+* **Atmosphere Mini™ Air Treatment System**：完整支援 3 段風速、自動/夜間二開關互鎖、二合一濾網壽命監控。
+

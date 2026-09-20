@@ -44,6 +44,12 @@ class MockSensorEntity(MockGeneric, MockEntity):
     pass
 
 
+class MockSwitchEntity(MockGeneric, MockEntity):
+    """Mock SwitchEntity."""
+    pass
+
+
+
 class MockConfigFlow:
     def __init_subclass__(cls, **kwargs):
         pass
@@ -96,6 +102,10 @@ sensor_mod.SensorEntity = MockSensorEntity
 sensor_mod.SensorDeviceClass = MagicMock()
 sensor_mod.SensorStateClass = MagicMock()
 sys.modules["homeassistant.components.sensor"] = sensor_mod
+
+switch_mod = MagicMock()
+switch_mod.SwitchEntity = MockSwitchEntity
+sys.modules["homeassistant.components.switch"] = switch_mod
 
 sys.modules["voluptuous"] = MagicMock()
 
