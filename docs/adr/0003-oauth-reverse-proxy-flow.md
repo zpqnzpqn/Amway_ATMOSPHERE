@@ -1,0 +1,5 @@
+# OAuth Reverse Proxy Authentication Flow
+
+For authentication with Amway Healthy Home cloud services, we route user authorization requests through the official reverse proxy (`account2.amwayglobal.com/v1/proxy/oauth2/aus2ddwj0luvaUo641t7/v1/authorize`) with regional market parameters (`clientapp=healthyhomeTW`, `amw_lng=zh-TW`) rather than directly querying Gluu oxAuth or using the mobile REST endpoint (`api/comauthenticationas/v1/native-authenticate`). 
+
+Reverse engineering the official APK (`com.amwayglobal.healthyhome` v20.0.0) revealed that direct REST authentication is guarded by DataDome bot-detection anti-scraping mechanisms and restricted solely to the Thailand market (`LoginUtil.isNativeLogin()`). In contrast, Taiwan and global markets utilize the `account2.amwayglobal.com` reverse proxy which sets essential session cookies (`aa_proxy_values`) before routing to regional LDAP identity providers on Gluu oxAuth, ensuring standard browser compatibility and zero credential interception.

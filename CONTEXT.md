@@ -28,6 +28,10 @@ _Avoid_: Atmosphere Connect (deprecated legacy app discontinued in April 2024)
 The centralized Amway cloud REST gateway (`conex-api.amwayglobal.com/rest/`) providing device inventories, telemetry queries, and STS credential generation.
 _Avoid_: Amway backend, healthy home server
 
+**Account Proxy**:
+The official Amway web authorization proxy (`account2.amwayglobal.com`) managing regional routing (`healthyhomeTW`) and session handoffs to Gluu oxAuth identity providers.
+_Avoid_: Direct oxAuth endpoint, Gluu REST authorizer
+
 **Device Shadow**:
 The AWS IoT state document reflecting reported telemetry (`display`, `custom`, `carbon`, `hepa`, `prefilter`) and receiving desired button commands.
 _Avoid_: Device state JSON, MQTT payload

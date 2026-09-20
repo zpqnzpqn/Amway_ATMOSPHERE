@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Amway Atmosphere への接続",
-        "description": "以下のリンクをブラウザで開き、アムウェイアカウントにサインインしてください：\n\n[ここをクリックしてログイン]({auth_url})\n\nログイン完了後、ブラウザが `amwayhealthyhome://loginRedirect?code=...` で始まる URL にリダイレクトされます。\nリダイレクトされた URL 全体または `code` パラメータをコピーして、下に入力してください。",
+        "description": "以下のリンクをブラウザで開き、アムウェイアカウントにサインインしてください：\n\n[ここをクリックしてログイン]({auth_url})\n\nログイン完了後、ブラウザが `amwayhealthyhome://loginRedirect?code=...` で始まる URL にリダイレクトされます（対応アプリがない旨のダイアログまたは空白ページが表示されても正常です）。\nブラウザのアドレスバーの URL 全体または `code` パラメータをコピーして、下に入力してください：",
         "data": {
           "auth_code": "認証コードまたはリダイレクトURL"
         }

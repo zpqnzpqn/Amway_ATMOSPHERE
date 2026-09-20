@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "連結安麗逸新空氣清淨機 (Amway Atmosphere)",
-        "description": "請在瀏覽器中開啟以下網址進行安麗帳號登入：\n\n[點此開啟安麗登入頁面]({auth_url})\n\n登入完成後，瀏覽器網址列會跳轉為以 `amwayhealthyhome://loginRedirect?code=...` 開頭的網址。\n請將瀏覽器網址列的完整網址（或其中的 `code` 代碼）複製並貼在下方：",
+        "description": "請在瀏覽器中開啟以下網址進行安麗帳號登入：\n\n[點此開啟安麗登入頁面]({auth_url})\n\n登入完成後，瀏覽器網址列會跳轉為以 `amwayhealthyhome://loginRedirect?code=...` 開頭的網址（若瀏覽器提示找不到應用程式或頁面空白屬正常現象）。\n請將瀏覽器網址列的完整網址（或其中的 `code` 代碼）複製並貼在下方：",
         "data": {
           "auth_code": "授權碼 (Code) 或 回調網址"
         }

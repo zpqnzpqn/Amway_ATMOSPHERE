@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connect to Amway Atmosphere",
-        "description": "Please open the following link in your browser to sign in to your Amway account:\n\n[Click here to log in]({auth_url})\n\nAfter logging in, your browser will redirect to a URL starting with `amwayhealthyhome://loginRedirect?code=...`.\nPlease copy the entire redirect URL or the `code` parameter and paste it below.",
+        "description": "Please open the following link in your browser to sign in to your Amway account:\n\n[Click here to log in]({auth_url})\n\nAfter logging in, your browser will redirect to a URL starting with `amwayhealthyhome://loginRedirect?code=...`.\n(If your browser displays a prompt saying no application can open this link or shows a blank page, this is expected).\nPlease copy the entire URL from the browser address bar (or the `code` parameter value) and paste it below:",
         "data": {
           "auth_code": "Authorization Code or Callback URL"
         }
