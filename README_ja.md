@@ -15,19 +15,29 @@
 [![Tests](https://github.com/zpqnzpqn/Amway_ATMOSPHERE/actions/workflows/test.yml/badge.svg)](https://github.com/zpqnzpqn/Amway_ATMOSPHERE/actions)
 [![Validate](https://github.com/zpqnzpqn/Amway_ATMOSPHERE/actions/workflows/validate.yml/badge.svg)](https://github.com/zpqnzpqn/Amway_ATMOSPHERE/actions)
 
-アムウェイ（Amway）の空気清浄機 **アトモスフィア スカイ (Atmosphere Sky)** および **アトモスフィア ミニ (Atmosphere Mini)** のための、公式仕様に準拠した Home Assistant カスタムインテグレーションです。公式 *Amway Healthy Home* アプリのクラウド通信プロトコルを解析して構築されており、**Apple HomeKit（ホームアプリ）の空気清浄機および空気質センサー** とのネイティブ連携に対応しています。
+アムウェイ（Amway）の空気清浄機 **アトモスフィア スカイ (Atmosphere Sky)** および **アトモスフィア ミニ (Atmosphere Mini)** のための、公式仕様に準拠した Home Assistant カスタムインテグレーションです。公式 *Amway Healthy Home* アプリのクラウド通信プロトコルを解析して構築されており、**AWS IoT Device Shadow 双方向リアルタイム制御** および **Apple HomeKit（ホームアプリ）ネイティブ空気清浄機・5段階空気質連携** に対応しています。
+
+---
+
+> 🚀 **リリースノート (Release v1.0.0 - 正式リリース版)**  
+> 本バージョンは最初の公式安定版（General Availability）であり、実機テストおよび38項目の自動ユニットテストに完全合格しています：
+> - 携帯電話番号とパスワードによる直接ログインに対応。バックグラウンドで Gluu PKCE 認証およびトークン自動更新を行います。
+> - Atmosphere Sky（5段階風量、3層フィルター、ターボモード）および Atmosphere Mini（3段階風量、2-in-1 フィルター）に完全対応。
+> - 空気清浄機本体（Fan エンティティ）にプリセットモード（自動、夜間、ターボ）を統合し、不要なスイッチを自動クリーンアップ。
+> - デバイスの実機シリアル番号（`thing_id`）およびファームウェアバージョンを Apple HomeKit のアクセサリ情報へ自動同期。
+> - 詳細なセットアップ手順については 👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide.md) をご参照ください。
 
 ---
 
 ## ✨ 主な機能
 
-- **🌀 包括的な空気清浄機・ファン制御 (`fan`)**:
+- **🌀 ネイティブ空気清浄機・ファン制御 (`fan`)**:
   - **Atmosphere Sky**: 5段階の風量調節（20%, 40%, 60%, 80%, 100%）。
   - **Atmosphere Mini**: 3段階の風量調節（33%, 67%, 100%）。
-  - **プリセットモード (Preset Modes)**: `自動 (Auto)`、`夜間 (Night)`、`ターボ (Turbo)`（Sky のみ対応）。
-  - **電源操作**: 高速な電源オン/オフおよびステータス同期。
+  - **内蔵プリセットモード (Preset Modes)**: `自動 (Auto)`、`夜間 (Night)`、`ターボ (Turbo)`（Sky のみ）。
+  - **即時クラウド制御**: AWS IoT REST API (SigV4 署名) を介して Device Shadow へ直接コマンド送信し、1秒以内に状態を同期。
 - **🍃 Apple HomeKit 5段階 空気質センサー (`sensor`)**:
-  - Apple HomeKit ネイティブの `AirQuality` 特性に完全対応：
+  - Apple HomeKit ネイティブの `AirQuality` 特性に完全対応（ホームアプリの部屋上部アイコンに表示）：
     - `1`: 非常に良い (Excellent)
     - `2`: 良い (Good)
     - `3`: 普通 (Fair)
@@ -38,24 +48,10 @@
   - プレフィルター残量 (`0–100%`)
   - HEPA フィルター残量 (`0–100%`)
   - カーボン脱臭フィルター残量 (`0–100%`、Sky のみ)
+- **📱 Apple Home 実機シリアル番号同期**:
+  - アムウェイ本体のシリアル番号（`thing_id`）およびファームウェア/ハードウェアバージョンを Apple HomeKit のアクセサリ情報へ正確に反映。
 - **🗂️ Apple Home「個別のタイルとして表示」対応**:
-  - ホームアプリの **「個別のタイルとして表示 (Show as Separate Tiles)」** に対応し、清浄機本体の操作パネルと空気質センサーを2つの独立したタイルに分割可能。
-  - Home Assistant 内でもクリーンで独立したエンティティとして提供され、自由なダッシュボード構築が可能です。
-
----
-
-## 📱 Apple Home（ホームアプリ）個別タイル設定手順
-
-Home Assistant の **HomeKit Bridge（ホームキットブリッジ）** を介して空気清浄機を同期した場合、デフォルトでは1つのアクセサリタイルにまとめられることがあります。以下の手順で2つの独立したタイルに分割できます：
-
-1. iPhone、iPad、または Mac で **「ホーム (Home)」** アプリを開きます。
-2. **「Atmosphere 空気清浄機」** タイルを長押し（またはクリック）します。
-3. 右下の **「設定（歯車アイコン）」** をタップします。
-4. **「個別のタイルとして表示 (Show as Separate Tiles)」** を選択します。
-5. 完了です！ホームアプリ内で自動的に2つのタイルに分割されます：
-   - **タイル 1**：空気清浄機の電源、風量スライダー、自動/夜間/ターボモード切替。
-   - **タイル 2**：室内の空気質レベル（非常に良い/良い/普通/悪い）とインジケーター。
-   それぞれのタイルを異なる部屋やお気に入りに個別に配置できます。
+  - ホームアプリ内で清浄機操作パネルと空気質センサーを2つの独立したタイルに分割可能。
 
 ---
 
@@ -88,17 +84,36 @@ Home Assistant の **HomeKit Bridge（ホームキットブリッジ）** を介
 
 1. Home Assistant で **「設定」 $\rightarrow$ 「デバイスとサービス」 $\rightarrow$ 「統合を追加」** を開きます。
 2. **「Amway Atmosphere」** を検索して選択します。
-3. ポップアップ画面にログインリンクが表示されます：
-   - リンクをクリックして、ブラウザで公式のアムウェイログインページを開きます。
-   - アムウェイアカウントでログインします。
-   - ログイン後、ブラウザが以下のような URL にリダイレクトされます：
-     ```text
-     amwayhealthyhome://loginRedirect?code=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx&state=...
-     ```
-     *(ブラウザに「ページが見つかりません」または「アプリを開けません」と表示されますが、これは正常な動作です)*。
-   - ブラウザのアドレスバーから **URL 全体**（または `code` の値）をコピーします。
-   - Home Assistant の入力欄に貼り付けて **「送信」** をクリックします。
-4. インテグレーションが自動的に認証を完了し、アカウントに登録されているすべての Atmosphere Sky および Mini デバイスを自動検出します！
+3. 認証方法を選択します：
+   - **方法 A：電話番号とパスワードによる直接ログイン（推奨）**：
+     登録済みの電話番号（例：`090xxxxxxxx` や `+8869xxxxxxxx`）とパスワードを入力します。自動的にトークンが取得され、期限切れ時もバックグラウンドで自動更新されます。
+   - **方法 B：Access Token の直接入力**：
+     パスワード保存を避けたい場合は、付属ツール `python3 tools/get_token.py --proxy` でトークンを取得して貼り付けます。
+4. 設定完了後、すべてのアトモスフィアデバイスおよびセンサーが自動的に登録されます！
+
+---
+
+## 🍏 Apple HomeKit 設定例 (configuration.yaml)
+
+Apple「ホーム」アプリで空気清浄機として利用する場合、`configuration.yaml` に以下を設定します：
+
+```yaml
+homekit:
+  - name: "Amway HomeKit Bridge"
+    port: 21064
+    mode: bridge
+    filter:
+      include_entities:
+        - fan.atmosphere_sky_air_treatment_system # または fan.<thing_id>
+        - sensor.atmosphere_sky_air_treatment_system_air_quality
+    entity_config:
+      fan.atmosphere_sky_air_treatment_system:
+        type: air_purifier
+        # フィルター残量を最低寿命センサーにリンク
+        linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
+```
+
+> 💡 5大センサーの HomeKit 対応状況および3層フィルターの自動最小寿命算出テンプレートについては、👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide.md#-apple-homekit-完美設定教學-type-air_purifier) をご参照ください。
 
 ---
 
@@ -143,27 +158,14 @@ segments:
     label: 悪い
 ```
 
-### 3. フィルター残量一覧カード (Entities Card)
-```yaml
-type: entities
-title: フィルター残量
-entities:
-  - entity: sensor.atmosphere_sky_prefilter_life
-    name: プレフィルター残量
-  - entity: sensor.atmosphere_sky_hepa_life
-    name: HEPA フィルター残量
-  - entity: sensor.atmosphere_sky_carbon_life
-    name: カーボン脱臭フィルター残量
-```
-
 ---
 
 ## 🛠️ 技術仕様・アーキテクチャ
 
-- **IoT Class**: `cloud_polling`（30秒間隔でクラウド Conex API より Device Shadow 状態をポーリング）。
-- **リアルタイム制御**: 風量変更や電源操作は、AWS IoT Device Shadow へ AWS Signature Version 4 (SigV4) 署名付き REST API で `RemoteButton` コマンドを直接発行。発行後1秒以内に即時状態更新を行うことで、遅延のない操作性を実現。
-- **認証**: Gluu OAuth2 IDP (`oxauth/restv1`) を採用。Refresh Token によるバックグラウンド自動更新を実装しており、再ログインの手間がありません。
-- **対応地域**: グローバル Amway Healthy Home クラウド基盤（台湾地域アカウント実機にて検証済み、日本地域アカウントにも対応可能）。
+- **IoT Class**: `cloud_polling`（30秒間隔でクラウド Conex API より Device Shadow 状態を同期）。
+- **リアルタイム制御**: AWS IoT Device Shadow へ SigV4 署名付き REST API で `RemoteButton` コマンドを直接発行。発行後1秒以内に即時状態更新を行うことで、遅延のない操作性を実現。
+- **認証**: Gluu OAuth2 IDP (`oxauth/restv1`) を採用。Refresh Token によるバックグラウンド自動更新を実装。
+- **対応地域**: グローバル Amway Healthy Home クラウド基盤。
 
 ---
 
