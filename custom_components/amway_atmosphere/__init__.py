@@ -29,8 +29,146 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: List[str] = ["fan", "sensor"]
 
 
+def _patch_homekit_serial_number(hass: HomeAssistant) -> None:
+    """Ensure HomeKit accessories receive their exact device serial number from Home Assistant."""
+    try:
+        import importlib
+        hk_acc = importlib.import_module("homeassistant.components.homekit.accessories")
+    except (ImportError, Exception) as err:
+        _LOGGER.debug("HomeKit integration not available for serial number bridging: %s", err)
+        return
+
+    if getattr(hk_acc.HomeAccessory, "_orig_init_amway", None) is not None:
+        # Already patched
+        return
+
+    orig_init = hk_acc.HomeAccessory.__init__
+    hk_acc.HomeAccessory._orig_init_amway = orig_init
+
+    def patched_init(
+        self,
+        hass: HomeAssistant,
+        driver: Any,
+        name: str,
+        entity_id: str,
+        aid: int,
+        config: dict,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        orig_init(
+            self,
+            hass,
+            driver,
+            name,
+            entity_id,
+            aid,
+            config,
+            *args,
+            **kwargs,
+        )
+
+        try:
+            from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+            real_serial = None
+            entity_reg = er.async_get(hass)
+            dev_reg = dr.async_get(hass)
+
+            # 1. Lookup real serial number from HA device registry
+            if entity_reg and dev_reg:
+                ent_entry = entity_reg.async_get(entity_id)
+                if ent_entry and getattr(ent_entry, "device_id", None):
+                    dev_entry = dev_reg.async_get(ent_entry.device_id)
+                    if (
+                        dev_entry
+                        and getattr(dev_entry, "serial_number", None)
+                        and isinstance(dev_entry.serial_number, str)
+                    ):
+                        real_serial = dev_entry.serial_number
+
+            # 2. Fallback to entity state attributes if registry lookup is empty
+            if not real_serial:
+                state = hass.states.get(entity_id)
+                if state and state.attributes:
+                    val = (
+                        state.attributes.get("serial_number")
+                        or state.attributes.get("serial")
+                        or state.attributes.get("thing_id")
+                    )
+                    if val and isinstance(val, (str, int)):
+                        real_serial = str(val)
+
+            # 3. If a serial number is found, map it directly to HomeKit AccessoryInformation SerialNumber
+            if real_serial:
+                serv_info = self.get_service("AccessoryInformation")
+                if serv_info:
+                    serv_info.configure_char("SerialNumber", value=str(real_serial)[:64])
+                    _LOGGER.debug(
+                        "Mapped HomeKit accessory %s (aid=%s) SerialNumber to %s",
+                        entity_id,
+                        aid,
+                        real_serial,
+                    )
+        except Exception as err:
+            _LOGGER.debug("Could not assign serial number for HomeKit accessory %s: %s", entity_id, err)
+
+    hk_acc.HomeAccessory.__init__ = patched_init
+    _LOGGER.info("Successfully enabled HomeKit serial number synchronization for Amway Atmosphere")
+
+    # Update any existing accessories in running HomeKit bridges
+    try:
+        from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+        entity_reg = er.async_get(hass)
+        dev_reg = dr.async_get(hass)
+
+        for hk_entry in hass.config_entries.async_entries("homekit"):
+            entry_data = getattr(hk_entry, "runtime_data", None)
+            homekit_obj = getattr(entry_data, "homekit", None) if entry_data else None
+            if homekit_obj and getattr(homekit_obj, "bridge", None):
+                for acc in list(homekit_obj.bridge.accessories.values()):
+                    acc_ent_id = getattr(acc, "entity_id", None)
+                    if not acc_ent_id:
+                        continue
+                    real_serial = None
+                    if entity_reg and dev_reg:
+                        ent_entry = entity_reg.async_get(acc_ent_id)
+                        if ent_entry and getattr(ent_entry, "device_id", None):
+                            dev_entry = dev_reg.async_get(ent_entry.device_id)
+                            if (
+                                dev_entry
+                                and getattr(dev_entry, "serial_number", None)
+                                and isinstance(dev_entry.serial_number, str)
+                            ):
+                                real_serial = dev_entry.serial_number
+                    if not real_serial:
+                        state = hass.states.get(acc_ent_id)
+                        if state and state.attributes:
+                            val = (
+                                state.attributes.get("serial_number")
+                                or state.attributes.get("serial")
+                                or state.attributes.get("thing_id")
+                            )
+                            if val and isinstance(val, (str, int)):
+                                real_serial = str(val)
+                    if real_serial:
+                        serv_info = acc.get_service("AccessoryInformation")
+                        if serv_info:
+                            serv_info.configure_char("SerialNumber", value=str(real_serial)[:64])
+    except Exception as err:
+        _LOGGER.debug("Could not update existing HomeKit accessories: %s", err)
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up the Amway Atmosphere component."""
+    _patch_homekit_serial_number(hass)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Amway Atmosphere from a config entry."""
+    _patch_homekit_serial_number(hass)
     session = async_get_clientsession(hass)
 
     async def _handle_token_refreshed(new_tokens: dict) -> None:

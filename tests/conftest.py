@@ -96,6 +96,10 @@ er_mod = MagicMock()
 helpers_mod.entity_registry = er_mod
 sys.modules["homeassistant.helpers.entity_registry"] = er_mod
 
+dr_mod = MagicMock()
+helpers_mod.device_registry = dr_mod
+sys.modules["homeassistant.helpers.device_registry"] = dr_mod
+
 sys.modules["homeassistant.helpers.aiohttp_client"] = MagicMock()
 entity_mod = MagicMock()
 entity_mod.DeviceInfo = dict

@@ -77,6 +77,7 @@ template:
 * **濾網壽命原生整合**：透過 `linked_filter_life_level_sensor`，點開家庭 App 清淨機面板即可檢視濾網百分比讀數與耗盡警示。
 * **空氣品質評級**：支援 HomeKit 五段評級（極佳、良好、一般、欠佳、極差），顯示於家庭 App 房間頂端。
 * **潔淨空氣數值 (Clean Air Value)**：Apple HomeKit 無通用數值（CADR）配件類型，保留於 Home Assistant 儀表板檢視。
+* **實體機身序號與韌體同步**：本整合自動將安麗實體序號（`thing_id`，如 `23342A03013613BAB`）及韌體/硬體版本直接對應至 HomeKit `AccessoryInformation` 服務。在 Apple「家庭」App 點選「配件詳細資訊」即可看到真實序號與 Home Assistant 裝置資訊完全一致！*(若更新前已配對，可在 HA 重新載入 HomeKit 橋接器以同步更新快取)*
 * **Siri 語音極致聲控**：可直接使用 Siri 控制：
   * *「嘿 Siri，將空氣清淨機設為自動模式」*
   * *「嘿 Siri，將空氣清淨機風速設為 60%」*

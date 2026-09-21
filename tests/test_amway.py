@@ -1154,6 +1154,8 @@ class TestAmwayAuthAndTokenLifecycle:
             thing_id="23342A03013613BAB",
             thing_type=MODEL_SKY,
             device_name="Atmosphere Sky™ Air Treatment System",
+            sw_version="1.8.5266",
+            hw_version="sky3613B",
         )
         coordinator.data = {"23342A03013613BAB": dev}
 
@@ -1162,6 +1164,133 @@ class TestAmwayAuthAndTokenLifecycle:
 
         assert fan.device_info["name"] == "23342A03013613BAB"
         assert sensor.device_info["name"] == "23342A03013613BAB"
+        assert fan.device_info["serial_number"] == "23342A03013613BAB"
+        assert sensor.device_info["serial_number"] == "23342A03013613BAB"
+        assert fan.device_info["sw_version"] == "1.8.5266"
+        assert sensor.device_info["sw_version"] == "1.8.5266"
+        assert fan.device_info["hw_version"] == "sky3613B"
+        assert sensor.device_info["hw_version"] == "sky3613B"
+
+        # Check extra state attributes
+        assert fan.extra_state_attributes["serial_number"] == "23342A03013613BAB"
+        assert fan.extra_state_attributes["serial"] == "23342A03013613BAB"
+        assert sensor.extra_state_attributes["serial_number"] == "23342A03013613BAB"
+        assert sensor.extra_state_attributes["serial"] == "23342A03013613BAB"
+
+    def test_api_client_extracts_firmware_and_hardware_versions(self):
+        """Verify async_get_devices extracts sw_version and hw_version."""
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.amway_atmosphere.api import AmwayApiClient
+
+        async def _test():
+            mock_session = MagicMock()
+            mock_resp = AsyncMock()
+            mock_resp.status = 200
+            mock_resp.json = AsyncMock(return_value=[
+                {
+                    "thingId": "23342A03013613BAB",
+                    "thingType": "sky",
+                    "shadow": {
+                        "payload": json.dumps({
+                            "state": {
+                                "reported": {
+                                    "system": {
+                                        "connected": True,
+                                        "appFirmwareVersion": "1.8.5266",
+                                    },
+                                    "display": {"speed": 1, "dust": 1},
+                                }
+                            }
+                        })
+                    },
+                    "thing": {
+                        "attributes": {
+                            "hardware_version": "sky3613B",
+                            "version_current": "1.8.6086",
+                        }
+                    }
+                }
+            ])
+            mock_session.request.return_value.__aenter__.return_value = mock_resp
+
+            client = AmwayApiClient(session=mock_session, access_token="token")
+            devices = await client.async_get_devices()
+            assert len(devices) == 1
+            dev = devices[0]
+            assert dev.thing_id == "23342A03013613BAB"
+            assert dev.sw_version == "1.8.5266"
+            assert dev.hw_version == "sky3613B"
+
+        asyncio.run(_test())
+
+    def test_homekit_serial_number_patch(self):
+        """Test _patch_homekit_serial_number correctly configures HomeKit AccessoryInformation SerialNumber."""
+        import sys
+        from unittest.mock import MagicMock
+        from custom_components.amway_atmosphere import _patch_homekit_serial_number
+
+        # Create a mock homeassistant.components.homekit.accessories module
+        mock_hk_acc = MagicMock()
+        class MockHomeAccessory:
+            def __init__(self, hass, driver, name, entity_id, aid, config, *args, **kwargs):
+                self.entity_id = entity_id
+                self.aid = aid
+                self.serv_info = MagicMock()
+
+            def get_service(self, name):
+                if name == "AccessoryInformation":
+                    return self.serv_info
+                return None
+
+        mock_hk_acc.HomeAccessory = MockHomeAccessory
+
+        # Register into sys.modules
+        fake_module_name = "homeassistant.components.homekit.accessories"
+        orig_mod = sys.modules.get(fake_module_name)
+        sys.modules[fake_module_name] = mock_hk_acc
+
+        try:
+            mock_hass = MagicMock()
+            mock_state = MagicMock()
+            mock_state.attributes = {"serial_number": "23342A03013613BAB"}
+            mock_hass.states.get.return_value = mock_state
+            mock_hass.config_entries.async_entries.return_value = []
+
+            _patch_homekit_serial_number(mock_hass)
+
+            # 1. Fallback via entity state attributes
+            acc1 = mock_hk_acc.HomeAccessory(
+                mock_hass, MagicMock(), "Amway Sky", "fan.23342a03013613bab", 1, {}
+            )
+            acc1.serv_info.configure_char.assert_called_with(
+                "SerialNumber", value="23342A03013613BAB"
+            )
+
+            # 2. Lookup via HA device registry
+            import homeassistant.helpers.device_registry as dr
+            import homeassistant.helpers.entity_registry as er
+
+            mock_ent_entry = MagicMock()
+            mock_ent_entry.device_id = "mock_dev_id"
+            mock_dev_entry = MagicMock()
+            mock_dev_entry.serial_number = "23342A03013613BAB"
+
+            er.async_get.return_value.async_get.return_value = mock_ent_entry
+            dr.async_get.return_value.async_get.return_value = mock_dev_entry
+
+            acc2 = mock_hk_acc.HomeAccessory(
+                mock_hass, MagicMock(), "Amway Sky", "fan.23342a03013613bab", 2, {}
+            )
+            acc2.serv_info.configure_char.assert_called_with(
+                "SerialNumber", value="23342A03013613BAB"
+            )
+        finally:
+            if orig_mod is not None:
+                sys.modules[fake_module_name] = orig_mod
+            else:
+                sys.modules.pop(fake_module_name, None)
+
 
 
 

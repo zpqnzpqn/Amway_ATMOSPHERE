@@ -95,6 +95,8 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
             manufacturer="Amway",
             model=model_name,
             serial_number=self._thing_id,
+            sw_version=dev.sw_version if dev else None,
+            hw_version=dev.hw_version if dev else None,
             configuration_url="https://www.amway.com.tw/sky/",
         )
 
@@ -260,6 +262,8 @@ class AmwayAtmosphereFan(CoordinatorEntity[AmwayAtmosphereCoordinator], FanEntit
         dev = self._device
         attrs = {
             "serial_number": self._thing_id,
+            "serial": self._thing_id,
+            "serial_no": self._thing_id,
             "thing_id": self._thing_id,
         }
         if dev:

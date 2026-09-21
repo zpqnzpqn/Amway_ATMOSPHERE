@@ -161,6 +161,8 @@ class AtmosphereDeviceState:
     hepa_life_left: Optional[int] = None  # 0..100%
     carbon_life_left: Optional[int] = None  # 0..100% (Sky only)
     child_lock: Optional[bool] = None
+    sw_version: Optional[str] = None
+    hw_version: Optional[str] = None
     raw_shadow: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -571,6 +573,14 @@ class AmwayApiClient:
             hepa = reported.get("hepa", {}) or {}
             carbon = reported.get("carbon", {}) or {}
 
+            thing_obj = item.get("thing", {}) or {}
+            thing_attrs = thing_obj.get("attributes", {}) or {}
+            hw_version = thing_attrs.get("hardware_version")
+            sw_version = (
+                system.get("appFirmwareVersion")
+                or thing_attrs.get("version_current")
+            )
+
             device = AtmosphereDeviceState(
                 thing_id=thing_id,
                 thing_type=thing_type,
@@ -584,6 +594,8 @@ class AmwayApiClient:
                 hepa_life_left=hepa.get("lifeLeft"),
                 carbon_life_left=carbon.get("lifeLeft"),
                 child_lock=system.get("childLock"),
+                sw_version=sw_version,
+                hw_version=hw_version,
                 raw_shadow=shadow_dict,
             )
             devices.append(device)
