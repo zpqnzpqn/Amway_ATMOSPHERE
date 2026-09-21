@@ -12,6 +12,9 @@
 
 ---
 
+> 💡 **事前準備（安裝整合）**：  
+> 本整合需先安裝至 Home Assistant。您可以透過 HACS 自訂儲存庫安裝並重啟 HA（若尚未安裝 HACS，請參閱 👉 [**HACS 官方安裝與使用手冊**](https://www.hacs.xyz/docs/use) 完成安裝）；亦可直接下載原始碼手動放入 `config/custom_components/amway_atmosphere/`。
+
 ## 🚀 連線登入方式
 
 ### 方式一：手機號碼與密碼直接登入（最推薦、免開瀏覽器）

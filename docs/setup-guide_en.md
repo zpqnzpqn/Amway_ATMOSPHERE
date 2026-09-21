@@ -12,6 +12,9 @@
 
 ---
 
+> 💡 **Prerequisites (Install the Integration)**:  
+> The integration must first be installed into your Home Assistant instance. You can install it via the HACS Custom Repository and restart HA (if you don't have HACS installed yet, refer to the 👉 [**HACS Official Documentation**](https://www.hacs.xyz/docs/use) to set it up); or manually download the source code into `config/custom_components/amway_atmosphere/`.
+
 ## 🚀 Connection & Authentication Methods
 
 ### Method 1: Direct Phone Number & Password Login (Recommended, Browser-Free)

@@ -58,6 +58,8 @@
 
 ### 方法一：透過 HACS 安裝（推薦）
 
+> 💡 **尚未安裝 HACS？** 請先參閱 👉 [**HACS 官方安裝與使用手冊**](https://www.hacs.xyz/docs/use) 完成 Home Assistant 社群商店之建置；或直接使用下方 **方法二** 手動複製安裝（完全無需 HACS）。
+
 1. 開啟 Home Assistant 側邊欄中的 **HACS**。
 2. 點擊右上角選單圖示（三個點 `...`）$\rightarrow$ **「自訂儲存庫 (Custom repositories)」**。
 3. 在儲存庫網址輸入：

@@ -59,6 +59,8 @@ An official-grade Home Assistant custom integration for **Amway Atmosphere Sky**
 
 ### Method 1: Via HACS Custom Repository (Recommended)
 
+> 💡 **Don't have HACS installed yet?** Refer to the 👉 [**HACS Official Documentation**](https://www.hacs.xyz/docs/use) to install and configure HACS first, or use **Method 2** below to install manually without HACS.
+
 1. Open **HACS** in your Home Assistant sidebar.
 2. Click the three dots menu icon in the top right corner $\rightarrow$ **Custom repositories**.
 3. In the repository URL field, enter:
