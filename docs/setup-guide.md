@@ -46,19 +46,40 @@ homekit:
       include_entities:
         - fan.atmosphere_sky_air_treatment_system
         - sensor.atmosphere_sky_air_treatment_system_air_quality
-        - sensor.atmosphere_sky_air_treatment_system_hepa_filter_life
     entity_config:
       fan.atmosphere_sky_air_treatment_system:
         type: air_purifier
+        # 將清淨機內建的濾網百分比與更換警報直接綁定至濾網感測器
+        linked_filter_life_level_sensor: sensor.atmosphere_sky_air_treatment_system_hepa_filter_life
 ```
 
-### 2. 功能特點
-* **Apple 原生空氣清淨機圖標**：不再顯示為電風扇，具備專屬淨化器動畫與自動/手動切換開關。
+#### 💡 進階推薦：三層濾網「自動取最低壽命」綁定
+Atmosphere Sky 具備前置、HEPA、活性碳三層濾網，而 HomeKit 規範一台空氣清淨機僅能容納一組 `FilterLifeLevel` 特徵。建議您在 `configuration.yaml` 建立「最低濾網壽命」模板感測器：
+
+```yaml
+template:
+  - sensor:
+      - name: "Atmosphere Sky 最低濾網壽命"
+        unique_id: atmosphere_sky_lowest_filter_life
+        unit_of_measurement: "%"
+        state: >
+          {{ [
+            states('sensor.atmosphere_sky_air_treatment_system_hepa_filter_life') | int(100),
+            states('sensor.atmosphere_sky_air_treatment_system_carbon_filter_life') | int(100),
+            states('sensor.atmosphere_sky_air_treatment_system_pre_filter_life') | int(100)
+          ] | min }}
+```
+將 `linked_filter_life_level_sensor` 指向 `sensor.atmosphere_sky_lowest_filter_life`，即可確保任一濾網壽命過低時，Apple「家庭」App 都能精準推播「需要更換濾網」通知！
+
+### 2. HomeKit 感測器對應說明
+* **Apple 原生空氣清淨機圖標**：不再顯示為電風扇，具備專屬淨化器旋轉動畫與自動/手動切換開關。
 * **原生 Preset Mode 整合**：`Auto`、`Night`、`Turbo` 模式直接內建於清淨機控制項中，無需額外建立獨立開關。
+* **濾網壽命原生整合**：透過 `linked_filter_life_level_sensor`，點開家庭 App 清淨機面板即可檢視濾網百分比讀數與耗盡警示。
+* **空氣品質評級**：支援 HomeKit 五段評級（極佳、良好、一般、欠佳、極差），顯示於家庭 App 房間頂端。
+* **潔淨空氣數值 (Clean Air Value)**：Apple HomeKit 無通用數值（CADR）配件類型，保留於 Home Assistant 儀表板檢視。
 * **Siri 語音極致聲控**：可直接使用 Siri 控制：
   * *「嘿 Siri，將空氣清淨機設為自動模式」*
   * *「嘿 Siri，將空氣清淨機風速設為 60%」*
-* **感測器獨立分類**：空氣品質（1~5級）與濾網壽命可在 HomeKit 作為獨立配件顯示於家庭 App 的「環境」與設備面板中。
 
 ---
 
