@@ -24,7 +24,7 @@
 > - 携帯電話番号とパスワードによる直接ログインに対応。バックグラウンドで Gluu PKCE 認証およびトークン自動更新を行います。
 > - Atmosphere Sky（5段階風量、3層フィルター、ターボモード）および Atmosphere Mini（3段階風量、2-in-1 フィルター）に完全対応。
 > - 空気清浄機本体（Fan エンティティ）にプリセットモード（自動、夜間、ターボ）を統合し、不要なスイッチを自動クリーンアップ。
-> - デバイスの実機シリアル番号（`thing_id`）およびファームウェアバージョンを Apple HomeKit のアクセサリ情報へ自動同期。
+> - デバイスの実機シリアル番号およびファームウェアバージョンを Apple HomeKit のアクセサリ情報へ自動同期。
 > - 詳細なセットアップ手順については 👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide_ja.md) をご参照ください。
 
 ---
@@ -49,7 +49,7 @@
   - HEPA フィルター残量 (`0–100%`)
   - カーボン脱臭フィルター残量 (`0–100%`、Sky のみ)
 - **📱 Apple Home 実機シリアル番号同期**:
-  - アムウェイ本体のシリアル番号（`thing_id`）およびファームウェア/ハードウェアバージョンを Apple HomeKit のアクセサリ情報へ正確に反映。
+  - アムウェイ本体の実機シリアル番号およびファームウェア/ハードウェアバージョンを Apple HomeKit のアクセサリ情報へ正確に反映。
 - **🗂️ Apple Home「個別のタイルとして表示」対応**:
   - ホームアプリ内で清浄機操作パネルと空気質センサーを2つの独立したタイルに分割可能。
 
@@ -106,7 +106,7 @@ homekit:
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # または fan.<thing_id>
+        - fan.atmosphere_sky_air_treatment_system # または fan.<device_name>
         - sensor.atmosphere_sky_air_treatment_system_air_quality
     entity_config:
       fan.atmosphere_sky_air_treatment_system:

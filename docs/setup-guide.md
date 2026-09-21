@@ -67,7 +67,7 @@ homekit:
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # 或您的 fan.<thing_id>
+        - fan.atmosphere_sky_air_treatment_system # 或您的 fan.<device_name>
         - sensor.atmosphere_sky_air_treatment_system_air_quality
     entity_config:
       fan.atmosphere_sky_air_treatment_system:
@@ -76,7 +76,7 @@ homekit:
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
 ```
 
-> 💡 **實體名稱小提示**：若您的實體是以機身序號命名（例如 `fan.23342a03013613bab`），請依您的實際 entity_id 相應替換。
+> 💡 **實體名稱小提示**：若您的實體是以自訂或房間名稱命名（例如 `fan.living_room_atmosphere_sky`），請依您的實際 entity_id 相應替換。
 
 ---
 
@@ -114,7 +114,7 @@ template:
 * **原生 Preset Mode 整合**：`Auto`、`Night`、`Turbo` 模式直接內建於清淨機控制項中，無需額外建立獨立開關。
 * **濾網壽命原生整合**：透過 `linked_filter_life_level_sensor`，點開家庭 App 清淨機面板即可檢視濾網百分比讀數與耗盡警示。
 * **空氣品質評級**：支援 HomeKit 五段評級（極佳、良好、一般、欠佳、極差），顯示於家庭 App 房間頂端。
-* **實體機身序號與韌體同步**：自動將安麗實體序號（`thing_id`，如 `23342A03013613BAB`）及韌體/硬體版本直接對應至 HomeKit `AccessoryInformation` 服務。在 Apple「家庭」App 點選「配件詳細資訊」即可看到真實序號與 Home Assistant 裝置資訊完全一致！*(若更新前已配對，可在 HA 重新載入 HomeKit 橋接器以同步更新快取)*
+* **實體機身序號與韌體同步**：自動將安麗實體機身序號及韌體/硬體版本直接對應至 HomeKit `AccessoryInformation` 服務。在 Apple「家庭」App 點選「配件詳細資訊」即可看到真實序號與 Home Assistant 裝置資訊完全一致！*(若更新前已配對，可在 HA 重新載入 HomeKit 橋接器以同步更新快取)*
 * **Siri 語音極致聲控**：可直接使用 Siri 控制：
   * *「嘿 Siri，將空氣清淨機設為自動模式」*
   * *「嘿 Siri，將空氣清淨機風速設為 60%」*
@@ -132,5 +132,5 @@ template:
 使用 Access Token 登入的最大優勢在於：**您完全不需要將您的安麗帳號與登入密碼儲存在 Home Assistant 中**。Token 僅具備讀取與控制設備的專屬權限，不會暴露您的付款或個人敏感資料。
 
 ### Q3：支援哪些設備型號？
-* **Atmosphere Sky™ Air Treatment System**：完整支援 5 段風速、自動/夜間/超速模式切換、前置/HEPA/活性碳濾網壽命監控、粉塵空氣品質指數。
+* **Atmosphere Sky™ Air Treatment System**：完整支援 5 段風速、自動/夜間/強效模式切換、前置/HEPA/活性碳濾網壽命監控、粉塵空氣品質指數。
 * **Atmosphere Mini™ Air Treatment System**：完整支援 3 段風速、自動/夜間模式切換、二合一濾網壽命監控。

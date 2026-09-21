@@ -24,7 +24,7 @@
 > - 支援手機號碼 + 密碼直接登入，底層自動完成 Gluu PKCE 授權換取 Token，並具備背景無感自動續期機制。
 > - 完整支援 Atmosphere Sky（5 段風速、三層濾網、Turbo 模式）與 Atmosphere Mini（3 段風速、二合一濾網）。
 > - 風扇與模式控制原生內建於清淨機實體（Fan Entity），自動清理舊版冗餘開關。
-> - 獨家動態 HomeKit 序號同步鉤子，將安麗實體機身序號（`thing_id`）與韌體版本 100% 同步至 Apple「家庭」App 序號欄位。
+> - 獨家動態 HomeKit 序號同步鉤子，將安麗實體機身序號與韌體版本 100% 同步至 Apple「家庭」App 序號欄位。
 > - 新手設定步驟請參閱 👉 [**新手快速連線與 HomeKit 設定指南**](docs/setup-guide.md)
 
 ---
@@ -34,7 +34,7 @@
 - **🌀 原生清淨機與風扇控制實體 (`fan`)**:
   - **Atmosphere Sky**: 5 段獨立風速調節（20%、40%、60%、80%、100%）。
   - **Atmosphere Mini**: 3 段獨立風速調節（33%、67%、100%）。
-  - **內建預設模式 (Preset Modes)**: 支援 `Auto (自動)`、`Night (夜間)`、`Turbo (超速)`，免去傳統外掛獨立開關的雜亂。
+  - **內建預設模式 (Preset Modes)**: 支援 `Auto (自動)`、`Night (夜間)`、`Turbo (強效 / 極速)`，免去傳統外掛獨立開關的雜亂。
   - **秒級雲端控制**: 透過 AWS IoT REST API (SigV4 簽名) 直接向 Device Shadow 發送指令，操作毫秒級響應。
 - **🍃 Apple HomeKit 原生 5 級空氣品質感測器 (`sensor`)**:
   - 完美對應 Apple HomeKit 原生 `AirQuality` 特徵數值（顯示於房間頂部圖標）：
@@ -48,7 +48,7 @@
   - HEPA 濾網壽命 (`0–100%`)
   - 活性碳氣味濾網壽命 (`0–100%`，僅 Sky 支援)
 - **📱 Apple Home 實體機身序號與配件資訊完美對應**:
-  - 自動將安麗機身序號（`thing_id`，如 `23342A03013613BAB`）與韌體/硬體版本帶入 HomeKit，告別 HA 預設顯示的 `entity_id` 雜亂名稱。
+  - 自動將安麗實體機身序號與韌體/硬體版本帶入 HomeKit，告別 HA 預設顯示的隨機實體名稱。
 - **🗂️ Apple Home (家庭 App) 多張卡片支援 (顯示為個別標籤頁)**:
   - 支援 Apple Home 的 **「顯示為個別標籤頁 (Show as Separate Tiles)」**，將設備拆解為「清淨機控制」和「室內空氣品質」兩張獨立卡片。
 
@@ -105,7 +105,7 @@ homekit:
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # 或您的 fan.<thing_id>
+        - fan.atmosphere_sky_air_treatment_system # 或您的 fan.<device_name>
         - sensor.atmosphere_sky_air_treatment_system_air_quality
     entity_config:
       fan.atmosphere_sky_air_treatment_system:

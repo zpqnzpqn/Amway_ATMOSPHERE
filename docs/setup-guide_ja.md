@@ -67,7 +67,7 @@ homekit:
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # またはお使いの fan.<thing_id>
+        - fan.atmosphere_sky_air_treatment_system # またはお使いの fan.<device_name>
         - sensor.atmosphere_sky_air_treatment_system_air_quality
     entity_config:
       fan.atmosphere_sky_air_treatment_system:
@@ -76,7 +76,7 @@ homekit:
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
 ```
 
-> 💡 **エンティティ名の注意点**: お使いの環境でシリアル番号ベースの名前（例: `fan.23342a03013613bab`）になっている場合は、実際の `entity_id` に置き換えてください。
+> 💡 **エンティティ名の注意点**: お使いの環境でカスタム名（例: `fan.living_room_atmosphere_sky`）になっている場合は、実際の `entity_id` に置き換えてください。
 
 ---
 
@@ -114,7 +114,7 @@ template:
 * **プリセットモード内蔵**: `自動 (Auto)`、`夜間 (Night)`、`ターボ (Turbo)` モードを空気清浄機コントロール内に統合。余計なスイッチを別途作る必要がありません。
 * **フィルター残量表示**: `linked_filter_life_level_sensor` との連携により、ホームアプリ内で残量確認および交換推奨通知が有効になります。
 * **5段階空気質評価**: HomeKit 標準の空気質評価（非常に良い・良い・普通・やや悪い・悪い）として部屋上部にすっきりと表示。
-* **実機シリアル番号とファームウェアの同期**: 本体の実機シリアル番号（`thing_id`、例: `23342A03013613BAB`）およびバージョン情報を HomeKit の `AccessoryInformation` に完全反映。Apple ホームアプリの「アクセサリの詳細」で Home Assistant と全く同一の実機情報が確認できます。*(更新前にペアリング済みの場合は、HAでHomeKitブリッジを再読み込みすることで同期されます)*
+* **実機シリアル番号とファームウェアの同期**: 本体の実機シリアル番号およびバージョン情報を HomeKit の `AccessoryInformation` に完全反映。Apple ホームアプリの「アクセサリの詳細」で Home Assistant と全く同一の実機情報が確認できます。*(更新前にペアリング済みの場合は、HAでHomeKitブリッジを再読み込みすることで同期されます)*
 * **Siri 音声操作**:
   * *「Hey Siri、空気清浄機を自動モードにして」*
   * *「Hey Siri、空気清浄機の風量を60%にして」*

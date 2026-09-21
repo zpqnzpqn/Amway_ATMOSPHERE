@@ -24,7 +24,7 @@ An official-grade Home Assistant custom integration for **Amway Atmosphere Sky**
 > - **Direct Login**: Connect seamlessly using your registered Phone Number and Password with automatic Gluu AppAuth PKCE token exchange and background token refresh.
 > - **Full Model Support**: Supports Atmosphere Sky (5 discrete speed steps, 3 filter stages, Turbo mode) and Atmosphere Mini (3 speed steps, 2-in-1 filter).
 > - **Unified Fan Entity**: Preset modes (`Auto`, `Night`, `Turbo`) are built directly into the purifier entity, with automatic pruning of legacy redundant switches.
-> - **HomeKit Serial Number Sync**: Automatically maps physical device serial number (`thing_id`) and firmware/hardware revisions to Apple HomeKit `AccessoryInformation`.
+> - **HomeKit Serial Number Sync**: Automatically maps physical device serial number and firmware/hardware revisions to Apple HomeKit `AccessoryInformation`.
 > - For detailed setup and HomeKit bridging, see the 👉 [**Setup & HomeKit Guide**](docs/setup-guide_en.md).
 
 ---
@@ -49,7 +49,7 @@ An official-grade Home Assistant custom integration for **Amway Atmosphere Sky**
   - HEPA Filter Life (`0–100%`)
   - Carbon Odor Filter Life (`0–100%`, Sky only)
 - **📱 Apple Home Hardware Serial Number Synchronization**:
-  - Dynamic bridge hook ensures the device's real hardware serial number (`thing_id`, e.g. `23342A03013613BAB`) and firmware version appear accurately under Apple Home Accessory Details.
+  - Dynamic bridge hook ensures the device's real hardware serial number and firmware version appear accurately under Apple Home Accessory Details.
 - **🗂️ Apple Home "Show as Separate Tiles" Support**:
   - Seamlessly splits the unified appliance into dedicated **Purifier** and **Air Quality** tiles in Apple Home.
 
@@ -106,7 +106,7 @@ homekit:
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # or your fan.<thing_id>
+        - fan.atmosphere_sky_air_treatment_system # or your fan.<device_name>
         - sensor.atmosphere_sky_air_treatment_system_air_quality
     entity_config:
       fan.atmosphere_sky_air_treatment_system:

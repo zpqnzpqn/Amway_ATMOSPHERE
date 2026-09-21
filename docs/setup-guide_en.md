@@ -67,7 +67,7 @@ homekit:
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # or your fan.<thing_id>
+        - fan.atmosphere_sky_air_treatment_system # or your fan.<device_name>
         - sensor.atmosphere_sky_air_treatment_system_air_quality
     entity_config:
       fan.atmosphere_sky_air_treatment_system:
@@ -76,7 +76,7 @@ homekit:
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
 ```
 
-> 💡 **Entity ID Note**: If your entity was generated using your device serial number (e.g. `fan.23342a03013613bab`), substitute it with your actual `entity_id`.
+> 💡 **Entity ID Note**: If your entity was customized (e.g. `fan.living_room_atmosphere_sky`), substitute it with your actual `entity_id`.
 
 ---
 
@@ -114,7 +114,7 @@ Then set `linked_filter_life_level_sensor` to `sensor.atmosphere_sky_lowest_filt
 * **Integrated Preset Modes**: `Auto`, `Night`, and `Turbo` modes are built directly into the purifier controls without creating separate confusing switches.
 * **Native Filter Life Indicator**: Through `linked_filter_life_level_sensor`, opening the purifier accessory in Apple Home displays real-time filter life percentage and replacement warnings.
 * **5-Tier Air Quality Rating**: Natively maps to HomeKit's 5 rating levels (Excellent, Good, Fair, Inferior, Poor) displayed prominently at the top of the room.
-* **Physical Serial Number & Firmware Sync**: Automatically maps the device's physical serial number (`thing_id`, e.g. `23342A03013613BAB`) and firmware/hardware versions to HomeKit `AccessoryInformation`. In Apple Home, tap **Accessory Details** to view the authentic hardware serial number matching Home Assistant! *(If paired previously, reload the HomeKit bridge in HA to refresh the cache)*
+* **Physical Serial Number & Firmware Sync**: Automatically maps the device's physical serial number and firmware/hardware versions to HomeKit `AccessoryInformation`. In Apple Home, tap **Accessory Details** to view the authentic hardware serial number matching Home Assistant! *(If paired previously, reload the HomeKit bridge in HA to refresh the cache)*
 * **Siri Voice Control**:
   * *"Hey Siri, set the air purifier to Auto mode"*
   * *"Hey Siri, set the air purifier fan speed to 60%"*

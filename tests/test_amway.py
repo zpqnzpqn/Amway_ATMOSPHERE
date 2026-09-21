@@ -1151,31 +1151,31 @@ class TestAmwayAuthAndTokenLifecycle:
 
         coordinator = MagicMock()
         dev = AtmosphereDeviceState(
-            thing_id="23342A03013613BAB",
+            thing_id="MOCK_SKY_SERIAL_12345",
             thing_type=MODEL_SKY,
             device_name="Atmosphere Sky™ Air Treatment System",
             sw_version="1.8.5266",
             hw_version="sky3613B",
         )
-        coordinator.data = {"23342A03013613BAB": dev}
+        coordinator.data = {"MOCK_SKY_SERIAL_12345": dev}
 
-        fan = AmwayAtmosphereFan(coordinator, "23342A03013613BAB")
-        sensor = AmwayAirQualitySensor(coordinator, "23342A03013613BAB")
+        fan = AmwayAtmosphereFan(coordinator, "MOCK_SKY_SERIAL_12345")
+        sensor = AmwayAirQualitySensor(coordinator, "MOCK_SKY_SERIAL_12345")
 
-        assert fan.device_info["name"] == "23342A03013613BAB"
-        assert sensor.device_info["name"] == "23342A03013613BAB"
-        assert fan.device_info["serial_number"] == "23342A03013613BAB"
-        assert sensor.device_info["serial_number"] == "23342A03013613BAB"
+        assert fan.device_info["name"] == "MOCK_SKY_SERIAL_12345"
+        assert sensor.device_info["name"] == "MOCK_SKY_SERIAL_12345"
+        assert fan.device_info["serial_number"] == "MOCK_SKY_SERIAL_12345"
+        assert sensor.device_info["serial_number"] == "MOCK_SKY_SERIAL_12345"
         assert fan.device_info["sw_version"] == "1.8.5266"
         assert sensor.device_info["sw_version"] == "1.8.5266"
         assert fan.device_info["hw_version"] == "sky3613B"
         assert sensor.device_info["hw_version"] == "sky3613B"
 
         # Check extra state attributes
-        assert fan.extra_state_attributes["serial_number"] == "23342A03013613BAB"
-        assert fan.extra_state_attributes["serial"] == "23342A03013613BAB"
-        assert sensor.extra_state_attributes["serial_number"] == "23342A03013613BAB"
-        assert sensor.extra_state_attributes["serial"] == "23342A03013613BAB"
+        assert fan.extra_state_attributes["serial_number"] == "MOCK_SKY_SERIAL_12345"
+        assert fan.extra_state_attributes["serial"] == "MOCK_SKY_SERIAL_12345"
+        assert sensor.extra_state_attributes["serial_number"] == "MOCK_SKY_SERIAL_12345"
+        assert sensor.extra_state_attributes["serial"] == "MOCK_SKY_SERIAL_12345"
 
     def test_api_client_extracts_firmware_and_hardware_versions(self):
         """Verify async_get_devices extracts sw_version and hw_version."""
@@ -1189,7 +1189,7 @@ class TestAmwayAuthAndTokenLifecycle:
             mock_resp.status = 200
             mock_resp.json = AsyncMock(return_value=[
                 {
-                    "thingId": "23342A03013613BAB",
+                    "thingId": "MOCK_SKY_SERIAL_12345",
                     "thingType": "sky",
                     "shadow": {
                         "payload": json.dumps({
@@ -1218,7 +1218,7 @@ class TestAmwayAuthAndTokenLifecycle:
             devices = await client.async_get_devices()
             assert len(devices) == 1
             dev = devices[0]
-            assert dev.thing_id == "23342A03013613BAB"
+            assert dev.thing_id == "MOCK_SKY_SERIAL_12345"
             assert dev.sw_version == "1.8.5266"
             assert dev.hw_version == "sky3613B"
 
@@ -1253,7 +1253,7 @@ class TestAmwayAuthAndTokenLifecycle:
         try:
             mock_hass = MagicMock()
             mock_state = MagicMock()
-            mock_state.attributes = {"serial_number": "23342A03013613BAB"}
+            mock_state.attributes = {"serial_number": "MOCK_SKY_SERIAL_12345"}
             mock_hass.states.get.return_value = mock_state
             mock_hass.config_entries.async_entries.return_value = []
 
@@ -1261,10 +1261,10 @@ class TestAmwayAuthAndTokenLifecycle:
 
             # 1. Fallback via entity state attributes
             acc1 = mock_hk_acc.HomeAccessory(
-                mock_hass, MagicMock(), "Amway Sky", "fan.23342a03013613bab", 1, {}
+                mock_hass, MagicMock(), "Amway Sky", "fan.mock_sky_serial_12345", 1, {}
             )
             acc1.serv_info.configure_char.assert_called_with(
-                "SerialNumber", value="23342A03013613BAB"
+                "SerialNumber", value="MOCK_SKY_SERIAL_12345"
             )
 
             # 2. Lookup via HA device registry
@@ -1274,16 +1274,16 @@ class TestAmwayAuthAndTokenLifecycle:
             mock_ent_entry = MagicMock()
             mock_ent_entry.device_id = "mock_dev_id"
             mock_dev_entry = MagicMock()
-            mock_dev_entry.serial_number = "23342A03013613BAB"
+            mock_dev_entry.serial_number = "MOCK_SKY_SERIAL_12345"
 
             er.async_get.return_value.async_get.return_value = mock_ent_entry
             dr.async_get.return_value.async_get.return_value = mock_dev_entry
 
             acc2 = mock_hk_acc.HomeAccessory(
-                mock_hass, MagicMock(), "Amway Sky", "fan.23342a03013613bab", 2, {}
+                mock_hass, MagicMock(), "Amway Sky", "fan.mock_sky_serial_12345", 2, {}
             )
             acc2.serv_info.configure_char.assert_called_with(
-                "SerialNumber", value="23342A03013613BAB"
+                "SerialNumber", value="MOCK_SKY_SERIAL_12345"
             )
         finally:
             if orig_mod is not None:
