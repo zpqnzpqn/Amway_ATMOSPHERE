@@ -118,45 +118,104 @@ homekit:
 
 ---
 
-## 📊 儀表板卡片範例 (Lovelace Cards)
+## 📊 儀表板卡片範本 (Lovelace Dashboard)
 
-### 1. 清淨機控制卡片 (Tile Card)
-```yaml
-type: tile
-entity: fan.atmosphere_sky
-name: 客廳清淨機
-features:
-  - type: fan-speed
-  - type: fan-preset-modes
-    style: dropdown
-    preset_modes:
-      - auto
-      - night
-      - turbo
-```
+直接將以下 YAML 貼入 Home Assistant 儀表板（手動卡片或垂直堆疊卡片），即可獲得包含清淨機主控、空氣品質與三道濾網即時狀態的完美儀表板：
 
-### 2. 空氣品質儀表盤 (Gauge Card)
 ```yaml
-type: gauge
-entity: sensor.atmosphere_sky_air_quality
-name: 室內空氣品質
-needle: true
-segments:
-  - from: 1
-    color: "#4caf50"
-    label: 極佳
-  - from: 2
-    color: "#8bc34a"
-    label: 良好
-  - from: 3
-    color: "#ffc107"
-    label: 一般
-  - from: 4
-    color: "#ff9800"
-    label: 欠佳
-  - from: 5
-    color: "#f44336"
-    label: 極差
+type: vertical-stack
+cards:
+  # 1. 清淨機主控卡片（包含模式下拉選單與風速調節）
+  - type: tile
+    entity: fan.atmosphere_sky
+    name: 房間 Atmosphere Sky
+    icon: mdi:air-purifier
+    features:
+      - type: fan-preset-modes
+        style: dropdown
+        preset_modes:
+          - Auto
+          - Night
+          - Turbo
+      - type: fan-speed
+
+  # 2. 空氣狀態與濾網重點警示
+  - type: horizontal-stack
+    cards:
+      # 空氣品質評級
+      - type: tile
+        entity: sensor.atmosphere_sky_air_quality
+        name: 空氣品質
+        icon: mdi:leaf
+
+      # CADR 潔淨空氣輸出值
+      - type: tile
+        entity: sensor.atmosphere_sky_clean_air_value
+        name: 潔淨輸出值
+        icon: mdi:weather-windy
+
+      # 濾網最低壽命（需搭配範本感測器）
+      - type: gauge
+        entity: sensor.atmosphere_sky_low_filter_life
+        name: 濾網最低壽命
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+  # 3. 三道濾網獨立壽命監控
+  - type: horizontal-stack
+    cards:
+      # 前置濾網 (Pre-Filter)
+      - type: gauge
+        entity: sensor.atmosphere_sky_pre_filter_life
+        name: 前置濾網
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+      # HEPA 濾網
+      - type: gauge
+        entity: sensor.atmosphere_sky_hepa_filter_life
+        name: HEPA 濾網
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+      # 活性碳濾網 (Carbon Filter)
+      - type: gauge
+        entity: sensor.atmosphere_sky_carbon_filter_life
+        name: 活性碳濾網
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
 ```
 
 ---

@@ -119,45 +119,104 @@ homekit:
 
 ---
 
-## 📊 ダッシュボードカード設定例 (Lovelace)
+## 📊 ダッシュボード設定例 (Lovelace Dashboard)
 
-### 1. 空気清浄機コントロールカード (Tile Card)
-```yaml
-type: tile
-entity: fan.atmosphere_sky
-name: リビング空気清浄機
-features:
-  - type: fan-speed
-  - type: fan-preset-modes
-    style: dropdown
-    preset_modes:
-      - auto
-      - night
-      - turbo
-```
+以下の YAML を Home Assistant ダッシュボード（手動カードまたは垂直スタック）に貼り付けるだけで、清浄機本体の操作、空気質、および各フィルターの残量を一括監視できるダッシュボードが完成します：
 
-### 2. 空気質ゲージカード (Gauge Card)
 ```yaml
-type: gauge
-entity: sensor.atmosphere_sky_air_quality
-name: 室内空気質
-needle: true
-segments:
-  - from: 1
-    color: "#4caf50"
-    label: 非常に良い
-  - from: 2
-    color: "#8bc34a"
-    label: 良い
-  - from: 3
-    color: "#ffc107"
-    label: 普通
-  - from: 4
-    color: "#ff9800"
-    label: やや悪い
-  - from: 5
-    color: "#f44336"
-    label: 悪い
+type: vertical-stack
+cards:
+  # 1. 空気清浄機メイン操作カード（プリセットモード・風量調整）
+  - type: tile
+    entity: fan.atmosphere_sky
+    name: Atmosphere Sky
+    icon: mdi:air-purifier
+    features:
+      - type: fan-preset-modes
+        style: dropdown
+        preset_modes:
+          - Auto
+          - Night
+          - Turbo
+      - type: fan-speed
+
+  # 2. 空気質およびフィルター重要警告
+  - type: horizontal-stack
+    cards:
+      # 空気質評価
+      - type: tile
+        entity: sensor.atmosphere_sky_air_quality
+        name: 空気質
+        icon: mdi:leaf
+
+      # CADR クリーンエア供給値
+      - type: tile
+        entity: sensor.atmosphere_sky_clean_air_value
+        name: 供給値 (CADR)
+        icon: mdi:weather-windy
+
+      # 最低フィルター残量（テンプレートセンサー連携）
+      - type: gauge
+        entity: sensor.atmosphere_sky_low_filter_life
+        name: フィルター最低寿命
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+  # 3. 3層フィルター個別残量トラッキング
+  - type: horizontal-stack
+    cards:
+      # プレフィルター (Pre-Filter)
+      - type: gauge
+        entity: sensor.atmosphere_sky_pre_filter_life
+        name: プレフィルター
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+      # HEPA フィルター
+      - type: gauge
+        entity: sensor.atmosphere_sky_hepa_filter_life
+        name: HEPA フィルター
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+      # カーボン脱臭フィルター (Carbon Filter)
+      - type: gauge
+        entity: sensor.atmosphere_sky_carbon_filter_life
+        name: 活性炭フィルター
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
 ```
 
 ---

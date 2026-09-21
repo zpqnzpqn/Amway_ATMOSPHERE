@@ -119,45 +119,104 @@ homekit:
 
 ---
 
-## 📊 Dashboard Cards (Lovelace)
+## 📊 Dashboard Cards (Lovelace Dashboard)
 
-### 1. Air Purifier Control (Tile Card)
-```yaml
-type: tile
-entity: fan.atmosphere_sky
-name: Living Room Purifier
-features:
-  - type: fan-speed
-  - type: fan-preset-modes
-    style: dropdown
-    preset_modes:
-      - auto
-      - night
-      - turbo
-```
+Paste the following YAML directly into your Home Assistant Dashboard (Manual Card or Vertical Stack) to get a comprehensive control view including purifier settings, air metrics, and individual filter lifecycle gauges:
 
-### 2. Indoor Air Quality (Gauge Card)
 ```yaml
-type: gauge
-entity: sensor.atmosphere_sky_air_quality
-name: Indoor Air Quality
-needle: true
-segments:
-  - from: 1
-    color: "#4caf50"
-    label: Excellent
-  - from: 2
-    color: "#8bc34a"
-    label: Good
-  - from: 3
-    color: "#ffc107"
-    label: Fair
-  - from: 4
-    color: "#ff9800"
-    label: Inferior
-  - from: 5
-    color: "#f44336"
-    label: Poor
+type: vertical-stack
+cards:
+  # 1. Main Air Purifier Tile (Presets & Speed Control)
+  - type: tile
+    entity: fan.atmosphere_sky
+    name: Atmosphere Sky
+    icon: mdi:air-purifier
+    features:
+      - type: fan-preset-modes
+        style: dropdown
+        preset_modes:
+          - Auto
+          - Night
+          - Turbo
+      - type: fan-speed
+
+  # 2. Air Quality & Critical Filter Alarm
+  - type: horizontal-stack
+    cards:
+      # Air Quality Rating
+      - type: tile
+        entity: sensor.atmosphere_sky_air_quality
+        name: Air Quality
+        icon: mdi:leaf
+
+      # CADR Clean Air Delivery Value
+      - type: tile
+        entity: sensor.atmosphere_sky_clean_air_value
+        name: Clean Air Value
+        icon: mdi:weather-windy
+
+      # Lowest Filter Life Gauge
+      - type: gauge
+        entity: sensor.atmosphere_sky_low_filter_life
+        name: Lowest Filter
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+  # 3. 3-Stage Individual Filter Lifecycle Tracking
+  - type: horizontal-stack
+    cards:
+      # Pre-Filter
+      - type: gauge
+        entity: sensor.atmosphere_sky_pre_filter_life
+        name: Pre-Filter
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+      # HEPA Filter
+      - type: gauge
+        entity: sensor.atmosphere_sky_hepa_filter_life
+        name: HEPA Filter
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
+
+      # Carbon Filter
+      - type: gauge
+        entity: sensor.atmosphere_sky_carbon_filter_life
+        name: Carbon Filter
+        min: 0
+        max: 100
+        needle: true
+        segments:
+          - from: 0
+            color: "#f44336"
+          - from: 20
+            color: "#ff9800"
+          - from: 50
+            color: "#4caf50"
 ```
 
 ---
