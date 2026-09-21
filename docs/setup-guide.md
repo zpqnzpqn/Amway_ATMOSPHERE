@@ -51,32 +51,32 @@ python3 tools/get_token.py --proxy
 | **HEPA Filter Life** | 40% | ✅ 原生支援 | 附屬於 `air_purifier` 的 `FilterLifeLevel` 特徵 | 透過清淨機本體綁定後，在「家庭」App 點開清淨機卡片會直接顯示「濾網壽命：40%」，壽命過低時會自動跳出「需要更換濾網」的系統警報。 |
 | **Carbon Filter Life** | 13% | ⚠️ 需二選一或取最小值 | 同上（HomeKit 一台清淨機僅能綁定一組 Filter 讀數） | HomeKit 規範一台清淨機僅能有一個 `FilterLifeLevel`。通常建議綁定最快耗盡的濾網（如活性碳 13%），或透過 HA 模板取三者最小值。 |
 | **Pre-Filter Life** | 58% | ⚠️ 需二選一或取最小值 | 同上 | 同上說明。 |
-| **Air Quality** | good | ✅ 原生支援 | `AirQualitySensor` (空氣品質感測器) | HomeKit 原生支援五段評級（Excellent / Good / Fair / Inferior / Poor）。在家庭 App 中會作為專屬小圖標顯示於房間頂部，顯示「良好」。 |
+| **PM2.5 / Air Quality** | 18 µg/m³ | ✅ 原生支援 | `AirQualitySensor` (空氣品質感測器) | HomeKit 需透過 `linked_pm25_sensor` 綁定數值 PM2.5 密度以計算五段評級。在家庭 App 中會作為專屬小圖標顯示於房間頂部，顯示「空氣品質：良好」。 |
 | **Clean Air Value** | 795 | ❌ 無原生對應 Type | 無 (Apple 無通用數值/CADR 配件) | Apple HomeKit 不允許隨意傳遞無型態的純數字。若強制偽裝成溫度/濕度/PM2.5，會導致讀數單位與分析嚴重失真（例如顯示 795°C 或 795%），**建議留在 Home Assistant 儀表板檢視即可，不納入 HomeKit 橋接**。 |
 
 ---
 
-### 2. 🛠️ 最佳 HomeKit 設定範例 (configuration.yaml)
+### 2. 🛠️ 最佳 HomeKit 設定範例 (configuration.yaml / packages)
 
-若要讓 Apple 家庭 App 達到最完美的顯示效果，請在 Home Assistant 的 `configuration.yaml` 中使用以下設定（排除不相容的數值感測器，僅橋接相容之清淨機與空氣品質評級）：
+若要讓 Apple 家庭 App 達到最完美的顯示效果（包含房間頂部圓形「空氣品質：良好」圖標、濾網壽命與模式切換），建議建立獨立的 HomeKit Bridge：
 
 ```yaml
 homekit:
   - name: "Amway HomeKit Bridge"
-    port: 21064
+    port: 21065
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # 或您的 fan.<device_name>
-        - sensor.atmosphere_sky_air_treatment_system_air_quality
+        - fan.atmosphere_sky
+        - sensor.atmosphere_sky_pm2_5
     entity_config:
-      fan.atmosphere_sky_air_treatment_system:
+      fan.atmosphere_sky:
         type: air_purifier
-        # 將清淨機內建的濾網百分比與耗盡警報綁定至最低濾網壽命
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
+        linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 **實體名稱小提示**：若您的實體是以自訂或房間名稱命名（例如 `fan.living_room_atmosphere_sky`），請依您的實際 entity_id 相應替換。
+> 💡 **實體名稱小提示**：請依您的實際實體名稱（例如 `fan.<your_device_name>`）替換範例中的實體 ID。若使用樣板感測器，Home Assistant 會將包含小數點的名稱（如 `PM2.5`）轉換為底線（如 `sensor.atmosphere_sky_pm2_5`）。
 
 ---
 

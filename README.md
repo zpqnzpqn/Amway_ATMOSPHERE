@@ -97,25 +97,65 @@ An official-grade Home Assistant custom integration for **Amway Atmosphere Sky**
 
 ## 🍏 Apple HomeKit Recommended Configuration
 
-To expose your purifier as a native Apple HomeKit Air Purifier with filter life warnings, add the following to your `configuration.yaml`:
+To achieve the best native experience in the Apple Home app (including the circular "Air Quality: Excellent / Good" status badge in the room header, filter lifecycle percentage and depletion alerts, and Auto / Night / Turbo preset selector), we recommend setting up a dedicated HomeKit Bridge (e.g. in `configuration.yaml` or `packages/amway_atmosphere.yaml`):
 
 ```yaml
+# ==============================================================================
+# Amway Atmosphere Sky - HomeKit & Template Sensors Package
+# ==============================================================================
+
+template:
+  # 1. Template sensor calculating the lowest remaining life across all 3 filters
+  - sensor:
+      - name: "Atmosphere Sky Lowest Filter Life"
+        unique_id: atmosphere_sky_lowest_filter_life
+        unit_of_measurement: "%"
+        state: >
+          {{ [
+            states('sensor.atmosphere_sky_hepa_filter_life') | int(100),
+            states('sensor.atmosphere_sky_carbon_filter_life') | int(100),
+            states('sensor.atmosphere_sky_pre_filter_life') | int(100)
+          ] | min }}
+
+  # 2. Map dust_level to standard numeric PM2.5 density (µg/m³) for Apple HomeKit
+  # Note: HomeKit's circular Air Quality status badge requires a numeric PM2.5 sensor
+  - sensor:
+      - name: "Atmosphere Sky PM2.5"
+        unique_id: atmosphere_sky_pm25
+        device_class: pm25
+        state_class: measurement
+        unit_of_measurement: "µg/m³"
+        state: >
+          {% set level = state_attr('sensor.atmosphere_sky_air_quality', 'dust_level') | int(2) %}
+          {% if level == 1 %}5
+          {% elif level == 2 %}18
+          {% elif level == 3 %}45
+          {% elif level == 4 %}80
+          {% elif level == 5 %}150
+          {% else %}18
+          {% endif %}
+
+# 3. Dedicated Apple HomeKit Bridge
+# Note: Use a distinct port (such as 21065) if your default bridge uses 21064
 homekit:
   - name: "Amway HomeKit Bridge"
-    port: 21064
+    port: 21065
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # or your fan.<device_name>
-        - sensor.atmosphere_sky_air_treatment_system_air_quality
+        - fan.atmosphere_sky
+        - sensor.atmosphere_sky_pm2_5
     entity_config:
-      fan.atmosphere_sky_air_treatment_system:
+      fan.atmosphere_sky:
         type: air_purifier
-        # Link native filter life percentage to your lowest filter life sensor
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
+        linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 For the complete **5-Sensor HomeKit Compatibility Evaluation Table** and multi-stage lowest filter life template sensor, see 👉 [**Setup & HomeKit Guide**](docs/setup-guide_en.md#-apple-homekit-setup-guide-type-air_purifier).
+> 💡 **Notes & Guidance**:
+> 1. **Entity IDs**: Replace `fan.atmosphere_sky` and sensor entity names with your actual Home Assistant entity IDs. Note that Home Assistant converts dots in template sensor names (such as `PM2.5`) to underscores (e.g. `sensor.atmosphere_sky_pm2_5`).
+> 2. **Air Quality Badge**: Apple HomeKit requires a numeric `linked_pm25_sensor` to display the circular **"Air Quality: Excellent / Good"** badge in Apple Home.
+> 3. For the complete **5-Sensor HomeKit Compatibility Evaluation Table**, see 👉 [**Setup & HomeKit Guide**](docs/setup-guide_en.md#-apple-homekit-setup-guide-type-air_purifier).
 
 ---
 

@@ -96,25 +96,65 @@
 
 ## 🍏 Apple HomeKit 完美設定範例
 
-若要讓 Apple 家庭 App 達到原生空氣清淨機的極致體驗，請在 `configuration.yaml` 中配置：
+若要讓 Apple 家庭 App 達到原生空氣清淨機的極致體驗（包含房間頂部圓形「空氣品質：極佳/良好」圖標、濾網壽命百分比與耗盡警報、Auto/Night/Turbo 模式），建議建立獨立的 HomeKit 橋接器並綁定 PM2.5 與濾網壽命感測器（可直接放置於 `configuration.yaml` 或 `packages/amway_atmosphere.yaml`）：
 
 ```yaml
+# ==============================================================================
+# Amway Atmosphere Sky - HomeKit & Template Sensors Package
+# ==============================================================================
+
+template:
+  # 1. 計算三層濾網（前置、HEPA、活性碳）最低剩餘壽命之樣板感測器
+  - sensor:
+      - name: "Atmosphere Sky 濾網最低壽命"
+        unique_id: atmosphere_sky_lowest_filter_life
+        unit_of_measurement: "%"
+        state: >
+          {{ [
+            states('sensor.atmosphere_sky_hepa_filter_life') | int(100),
+            states('sensor.atmosphere_sky_carbon_filter_life') | int(100),
+            states('sensor.atmosphere_sky_pre_filter_life') | int(100)
+          ] | min }}
+
+  # 2. 映射 Apple HomeKit 原生標準 PM2.5 數值感測器 (µg/m³)
+  # 說明：Apple HomeKit 的「空氣品質」圓形圖標需綁定浮點數 PM2.5 密度判定，此處將機器的 5 級 dust_level 轉換為標準濃度
+  - sensor:
+      - name: "Atmosphere Sky PM2.5"
+        unique_id: atmosphere_sky_pm25
+        device_class: pm25
+        state_class: measurement
+        unit_of_measurement: "µg/m³"
+        state: >
+          {% set level = state_attr('sensor.atmosphere_sky_air_quality', 'dust_level') | int(2) %}
+          {% if level == 1 %}5
+          {% elif level == 2 %}18
+          {% elif level == 3 %}45
+          {% elif level == 4 %}80
+          {% elif level == 5 %}150
+          {% else %}18
+          {% endif %}
+
+# 3. Apple HomeKit 獨立橋接器 (Amway HomeKit Bridge)
+# 說明：建議建立獨立橋接器（如 port 21065）避免與預設 21064 衝突
 homekit:
   - name: "Amway HomeKit Bridge"
-    port: 21064
+    port: 21065
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # 或您的 fan.<device_name>
-        - sensor.atmosphere_sky_air_treatment_system_air_quality
+        - fan.atmosphere_sky
+        - sensor.atmosphere_sky_pm2_5
     entity_config:
-      fan.atmosphere_sky_air_treatment_system:
+      fan.atmosphere_sky:
         type: air_purifier
-        # 將清淨機內建的濾網百分比與耗盡警報綁定至最低濾網壽命
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
+        linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 **5 項感測器 HomeKit 對應評估表與濾網自動最低壽命綁定教學**，請參閱 👉 [**Apple HomeKit 完整設定教學**](docs/setup-guide.md#-apple-homekit-完美設定教學-type-air_purifier)
+> 💡 **注意事項與說明**：
+> 1. **實體 ID 替換**：請依您的實際實體名稱（例如 `fan.<your_device_name>`）替換範例中的實體 ID。若使用樣板感測器，請留意 Home Assistant 會自動將包含小數點的名稱（如 `PM2.5`）轉換為底線（如 `sensor.atmosphere_sky_pm2_5`）。
+> 2. **HomeKit 空氣品質圖標**：Apple HomeKit 必須綁定數值型的 `linked_pm25_sensor`，家庭 App 房間頂部才會正常點亮 **圓形「空氣品質：極佳 / 良好」圖標**。
+> 3. **完整設定指南**：5 項感測器 HomeKit 對應評估表與多層濾網自動連動教學，請參閱 👉 [**Apple HomeKit 完整設定教學**](docs/setup-guide.md#-apple-homekit-完美設定教學-type-air_purifier)
 
 ---
 

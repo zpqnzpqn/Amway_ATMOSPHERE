@@ -97,25 +97,65 @@
 
 ## 🍏 Apple HomeKit 設定例 (configuration.yaml)
 
-Apple「ホーム」アプリで空気清浄機として利用する場合、`configuration.yaml` に以下を設定します：
+Apple「ホーム」アプリで空気清浄機として最大限に活用する場合（部屋上部の「空気質：良好」アイコン表示、フィルター寿命警告、Auto/Night/Turbo プリセット連動）、専用の HomeKit ブリッジを設定することをお勧めします（`configuration.yaml` または `packages/amway_atmosphere.yaml`）：
 
 ```yaml
+# ==============================================================================
+# Amway Atmosphere Sky - HomeKit & Template Sensors Package
+# ==============================================================================
+
+template:
+  # 1. 3層フィルター（プレ、HEPA、カーボン）の最低残量を算出するテンプレート
+  - sensor:
+      - name: "Atmosphere Sky フィルター最低寿命"
+        unique_id: atmosphere_sky_lowest_filter_life
+        unit_of_measurement: "%"
+        state: >
+          {{ [
+            states('sensor.atmosphere_sky_hepa_filter_life') | int(100),
+            states('sensor.atmosphere_sky_carbon_filter_life') | int(100),
+            states('sensor.atmosphere_sky_pre_filter_life') | int(100)
+          ] | min }}
+
+  # 2. Apple HomeKit 用 PM2.5 数値センサーへのマッピング (µg/m³)
+  # 備考：HomeKit の「空気質」円形アイコンは数値の PM2.5 濃度を必要とします
+  - sensor:
+      - name: "Atmosphere Sky PM2.5"
+        unique_id: atmosphere_sky_pm25
+        device_class: pm25
+        state_class: measurement
+        unit_of_measurement: "µg/m³"
+        state: >
+          {% set level = state_attr('sensor.atmosphere_sky_air_quality', 'dust_level') | int(2) %}
+          {% if level == 1 %}5
+          {% elif level == 2 %}18
+          {% elif level == 3 %}45
+          {% elif level == 4 %}80
+          {% elif level == 5 %}150
+          {% else %}18
+          {% endif %}
+
+# 3. 独立した Apple HomeKit ブリッジ
+# 備考：デフォルト（21064）と競合しないよう 21065 などのポートを指定します
 homekit:
   - name: "Amway HomeKit Bridge"
-    port: 21064
+    port: 21065
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # または fan.<device_name>
-        - sensor.atmosphere_sky_air_treatment_system_air_quality
+        - fan.atmosphere_sky
+        - sensor.atmosphere_sky_pm2_5
     entity_config:
-      fan.atmosphere_sky_air_treatment_system:
+      fan.atmosphere_sky:
         type: air_purifier
-        # フィルター残量を最低寿命センサーにリンク
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
+        linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 5大センサーの HomeKit 対応状況および3層フィルターの自動最小寿命算出テンプレートについては、👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide_ja.md#-apple-homekit-設定ガイド-type-air_purifier) をご参照ください。
+> 💡 **注意事項とヒント**：
+> 1. **エンティティ ID の置換**：ご使用の環境の実際のエンティティ名（例：`fan.<device_name>`）に適宜置き換えてください。テンプレート名にドット（`PM2.5`）が含まれる場合、Home Assistant はアンダースコア（`sensor.atmosphere_sky_pm2_5`）に変換します。
+> 2. **空気質アイコンの表示**：Apple HomeKit で部屋の上部に「空気質：良好」アイコンを表示するには、数値型の `linked_pm25_sensor` の紐付けが必要です。
+> 3. 5大センサーの HomeKit 対応状況および詳細解説については、👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide_ja.md#-apple-homekit-設定ガイド-type-air_purifier) をご参照ください。
 
 ---
 

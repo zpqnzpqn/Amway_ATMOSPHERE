@@ -51,32 +51,32 @@ This integration is fully compatible with Apple HomeKit specifications, bridging
 | **HEPA Filter Life** | 40% | ✅ Native Support | Subordinate to `air_purifier` via `FilterLifeLevel` characteristic | When linked to the purifier accessory, tapping the purifier tile in Apple Home directly displays "Filter Life: 40%". When life drops below the threshold, Apple Home automatically pushes a "Filter Replacement Needed" system alert. |
 | **Carbon Filter Life** | 13% | ⚠️ Choose One or Use Lowest Minimum | Same as above (HomeKit allows only one Filter reading per purifier) | HomeKit specification dictates that an Air Purifier accessory can only have one `FilterLifeLevel`. It is recommended to bind the filter that depletes fastest (e.g. Carbon 13%), or use a Home Assistant template sensor taking the minimum of all three filters. |
 | **Pre-Filter Life** | 58% | ⚠️ Choose One or Use Lowest Minimum | Same as above | Same as above. |
-| **Air Quality** | good | ✅ Native Support | `AirQualitySensor` (Air Quality Sensor) | HomeKit natively supports 5-level rating (Excellent / Good / Fair / Inferior / Poor). Displays as a dedicated icon at the top of the room in Apple Home, showing "Good". |
+| **PM2.5 / Air Quality** | 18 µg/m³ | ✅ Native Support | `AirQualitySensor` (Air Quality Sensor) | HomeKit requires linking a numeric PM2.5 density sensor via `linked_pm25_sensor` to evaluate the 5-tier status. Displays as a circular icon at the top of the room in Apple Home, showing "Air Quality: Good". |
 | **Clean Air Value** | 795 | ❌ No Native Type | None (Apple HomeKit has no generic numeric/CADR accessory type) | Apple HomeKit does not allow arbitrary untyped numbers. Forcing it as Temperature/Humidity/PM2.5 distorts units and analysis (e.g. displaying 795°C or 795%). **Keep this sensor on your Home Assistant dashboard; do not bridge it to HomeKit.** |
 
 ---
 
-### 2. 🛠️ Recommended HomeKit Bridge Configuration (configuration.yaml)
+### 2. 🛠️ Recommended HomeKit Bridge Configuration (configuration.yaml / packages)
 
-To achieve the best presentation in the Apple Home app, configure the HomeKit bridge in Home Assistant's `configuration.yaml` as follows (excluding incompatible numeric sensors and bridging only the purifier and air quality rating):
+To achieve the best presentation in the Apple Home app (including the circular "Air Quality: Good" room status icon, filter life level, and mode controls), configure a dedicated HomeKit bridge:
 
 ```yaml
 homekit:
   - name: "Amway HomeKit Bridge"
-    port: 21064
+    port: 21065
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # or your fan.<device_name>
-        - sensor.atmosphere_sky_air_treatment_system_air_quality
+        - fan.atmosphere_sky
+        - sensor.atmosphere_sky_pm2_5
     entity_config:
-      fan.atmosphere_sky_air_treatment_system:
+      fan.atmosphere_sky:
         type: air_purifier
-        # Link native purifier filter life percentage and depletion alarm to lowest filter life sensor
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
+        linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 **Entity ID Note**: If your entity was customized (e.g. `fan.living_room_atmosphere_sky`), substitute it with your actual `entity_id`.
+> 💡 **Entity ID Note**: Substitute entity names with your actual `entity_id` (e.g. `fan.<your_device_name>`). Note that Home Assistant converts dots in template sensor names (such as `PM2.5`) to underscores (e.g. `sensor.atmosphere_sky_pm2_5`).
 
 ---
 

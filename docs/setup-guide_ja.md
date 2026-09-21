@@ -51,32 +51,32 @@ python3 tools/get_token.py --proxy
 | **HEPA Filter Life** | 40% | ✅ ネイティブ対応 | `air_purifier` に従属する `FilterLifeLevel` 特性 | 清浄機本体に紐付けることで、ホームアプリの清浄機カード内に「フィルター残量：40%」と直接表示されます。寿命低下時には自動的に「フィルター交換の必要あり」というシステム通知が届きます。 |
 | **Carbon Filter Life** | 13% | ⚠️ 選択または最小値算出 | 同上（HomeKit 仕様上、清浄機1台につきフィルター読取値は1つ） | HomeKit 規格では1台の空気清浄機につき `FilterLifeLevel` は1つのみ保持可能です。最も早く消費されるフィルター（例：カーボン脱臭 13%）を割り当てるか、HAのテンプレートで3層の最小値を算出することを推奨します。 |
 | **Pre-Filter Life** | 58% | ⚠️ 選択または最小値算出 | 同上 | 同上。 |
-| **Air Quality** | good | ✅ ネイティブ対応 | `AirQualitySensor` (空気質センサー) | HomeKit は5段階評価（非常に良い / 良い / 普通 / やや悪い / 悪い）を標準サポートしています。ホームアプリ内の部屋上部に「空気質：良好」といった専用アイコンで表示されます。 |
+| **PM2.5 / Air Quality** | 18 µg/m³ | ✅ ネイティブ対応 | `AirQualitySensor` (空気質センサー) | HomeKit は `linked_pm25_sensor` で数値型の PM2.5 濃度を紐付けることで5段階評価を判定します。ホームアプリ内の部屋上部に「空気質：良好」アイコンが表示されます。 |
 | **Clean Air Value** | 795 | ❌ 非対応（型なし数値） | なし（Apple HomeKit に汎用数値/CADR用アクセサリ型は存在しません） | Apple HomeKit は型のない純粋な数値を許可していません。無理に温度や湿度、PM2.5として偽装すると単位や解析が著しく乱れます（例：795°C や 795% 表示）。**Home Assistant のダッシュボードでの確認に留め、HomeKit にはブリッジしないことを強く推奨します。** |
 
 ---
 
-### 2. 🛠️ 推奨 HomeKit ブリッジ設定 (configuration.yaml)
+### 2. 🛠️ 推奨 HomeKit ブリッジ設定 (configuration.yaml / packages)
 
-Apple「ホーム」アプリで最も美しく安定した表示を実現するため、Home Assistant の `configuration.yaml` に以下の設定を追加します（互換性のない数値センサーを除外し、清浄機本体と空気質センサーのみをブリッジ）：
+Apple「ホーム」アプリで最も美しく安定した表示を実現するため（部屋上部の「空気質：良好」アイコン表示、フィルター寿命警告、Auto/Night/Turbo プリセット連動）、専用の HomeKit ブリッジを設定することをお勧めします：
 
 ```yaml
 homekit:
   - name: "Amway HomeKit Bridge"
-    port: 21064
+    port: 21065
     mode: bridge
     filter:
       include_entities:
-        - fan.atmosphere_sky_air_treatment_system # またはお使いの fan.<device_name>
-        - sensor.atmosphere_sky_air_treatment_system_air_quality
+        - fan.atmosphere_sky
+        - sensor.atmosphere_sky_pm2_5
     entity_config:
-      fan.atmosphere_sky_air_treatment_system:
+      fan.atmosphere_sky:
         type: air_purifier
-        # 清浄機内蔵のフィルター残量および警告を「最低寿命センサー」へ紐付け
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
+        linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 **エンティティ名の注意点**: お使いの環境でカスタム名（例: `fan.living_room_atmosphere_sky`）になっている場合は、実際の `entity_id` に置き換えてください。
+> 💡 **エンティティ名の注意点**: お使いの環境の実際の `entity_id`（例: `fan.<device_name>`）に置き換えてください。テンプレート名にドット（`PM2.5`）が含まれる場合、Home Assistant はアンダースコア（`sensor.atmosphere_sky_pm2_5`）に変換します。
 
 ---
 
