@@ -984,7 +984,7 @@ class TestAmwayModeSwitches:
 class TestAmwayAuthAndTokenLifecycle:
     """TDD tests for OAuth code exchange, token refresh, and login guardrails."""
 
-    def test_oauth_code_flow_exchanges_tokens_and_stores_refresh_token(self):
+    def test_phone_password_flow_authenticates_and_stores_refresh_token(self):
         import asyncio
         import time
         from unittest.mock import AsyncMock, MagicMock, patch
@@ -992,18 +992,22 @@ class TestAmwayAuthAndTokenLifecycle:
         from custom_components.amway_atmosphere.config_flow import AmwayAtmosphereConfigFlow
         from custom_components.amway_atmosphere.const import (
             CONF_ACCESS_TOKEN,
-            CONF_AUTH_CODE,
+            CONF_COUNTRY,
             CONF_EXPIRES_AT,
+            CONF_PASSWORD,
             CONF_REFRESH_TOKEN,
+            CONF_USERNAME,
         )
 
         async def _run():
             flow = AmwayAtmosphereConfigFlow()
             flow.hass = MagicMock()
 
-            mock_tokens = {
+            mock_login_res = {
                 "access_token": "mock-oauth-access-token",
                 "refresh_token": "mock-oauth-refresh-token",
+                "username": "+886912345678",
+                "party_id": "90436550",
                 "expires_in": 3600,
             }
             mock_device = AtmosphereDeviceState(
@@ -1013,20 +1017,58 @@ class TestAmwayAuthAndTokenLifecycle:
             )
 
             with patch.object(
-                AmwayApiClient, "async_exchange_code", AsyncMock(return_value=mock_tokens)
-            ) as mock_exchange, patch.object(
+                AmwayApiClient, "async_login_with_password", AsyncMock(return_value=mock_login_res)
+            ) as mock_login, patch.object(
                 AmwayApiClient, "async_get_devices", AsyncMock(return_value=[mock_device])
             ):
                 result = await flow.async_step_user(
-                    {CONF_AUTH_CODE: "amwayhealthyhome://loginRedirect?code=test_code_12345"}
+                    {
+                        CONF_USERNAME: "0912345678",
+                        CONF_PASSWORD: "user_secret_password",
+                        CONF_COUNTRY: "TW",
+                    }
                 )
 
-                mock_exchange.assert_called_once()
+                mock_login.assert_called_once()
                 assert result["type"] == "create_entry"
                 assert result["title"] == "Amway Atmosphere (sky-test-01)"
                 assert result["data"][CONF_ACCESS_TOKEN] == "mock-oauth-access-token"
                 assert result["data"][CONF_REFRESH_TOKEN] == "mock-oauth-refresh-token"
+                assert result["data"][CONF_USERNAME] == "+886912345678"
                 assert result["data"][CONF_EXPIRES_AT] > time.time()
+
+        asyncio.run(_run())
+
+    def test_config_flow_schema_strictly_phone_and_password(self):
+        import asyncio
+        from unittest.mock import MagicMock
+        from custom_components.amway_atmosphere.config_flow import AmwayAtmosphereConfigFlow
+        from custom_components.amway_atmosphere.const import (
+            CONF_ACCESS_TOKEN,
+            CONF_AUTH_CODE,
+            CONF_COUNTRY,
+            CONF_PASSWORD,
+            CONF_USERNAME,
+        )
+
+        async def _run():
+            flow = AmwayAtmosphereConfigFlow()
+            flow.hass = MagicMock()
+
+            result = await flow.async_step_user(None)
+            assert result["type"] == "form"
+            assert result["step_id"] == "user"
+
+            # Check that schema only presents phone number, password, country
+            raw_keys = result["data_schema"].schema.keys()
+            schema_keys = [getattr(k, "schema", k) for k in raw_keys]
+
+            assert CONF_USERNAME in schema_keys
+            assert CONF_PASSWORD in schema_keys
+            assert CONF_COUNTRY in schema_keys
+            # auth_code and access_token MUST NOT be present in user schema
+            assert CONF_AUTH_CODE not in schema_keys
+            assert CONF_ACCESS_TOKEN not in schema_keys
 
         asyncio.run(_run())
 

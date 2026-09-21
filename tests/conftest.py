@@ -64,7 +64,13 @@ class MockConfigFlow:
         return {"type": "create_entry", "title": title, "data": data}
 
     def async_show_form(self, step_id, data_schema=None, errors=None, description_placeholders=None):
-        return {"type": "form", "step_id": step_id, "errors": errors}
+        return {
+            "type": "form",
+            "step_id": step_id,
+            "data_schema": data_schema,
+            "errors": errors,
+            "description_placeholders": description_placeholders,
+        }
 
     def async_abort(self, reason):
         return {"type": "abort", "reason": reason}
@@ -107,5 +113,17 @@ switch_mod = MagicMock()
 switch_mod.SwitchEntity = MockSwitchEntity
 sys.modules["homeassistant.components.switch"] = switch_mod
 
-sys.modules["voluptuous"] = MagicMock()
+class MockMarker:
+    def __init__(self, schema, **kwargs):
+        self.schema = schema
+
+class MockSchema:
+    def __init__(self, schema):
+        self.schema = schema
+
+vol_mod = MagicMock()
+vol_mod.Schema = MockSchema
+vol_mod.Required = lambda k, **kw: MockMarker(k, **kw)
+vol_mod.Optional = lambda k, **kw: MockMarker(k, **kw)
+sys.modules["voluptuous"] = vol_mod
 

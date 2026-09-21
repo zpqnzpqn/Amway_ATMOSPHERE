@@ -3,22 +3,28 @@
     "step": {
       "user": {
         "title": "Amway Atmosphere への接続",
-        "description": "以下のリンクをブラウザで開き、アムウェイアカウントにサインインしてください：\n\n[ここをクリックしてログイン]({auth_url})\n\nログイン完了後、ブラウザが `amwayhealthyhome://loginRedirect?code=...` で始まる URL にリダイレクトされます（対応アプリがない旨のダイアログまたは空白ページが表示されても正常です）。\nブラウザのアドレスバーの URL 全体または `code` パラメータをコピーして、下に入力してください：",
+        "description": "Amway 空気清浄機に接続するため、登録された携帯電話番号とパスワードを入力してください。",
         "data": {
-          "auth_code": "認証コードまたはリダイレクトURL"
+          "username": "携帯電話番号",
+          "password": "パスワード",
+          "country": "国コード（デフォルト TW）"
         }
       },
       "reauth_confirm": {
         "title": "アムウェイアカウントの再認証",
-        "description": "アムウェイのログインセッションの有効期限が切れました。以下のリンクから再認証を行ってください：\n\n[ここをクリックしてログイン]({auth_url})\n\n新しいリダイレクト URL または `code` を下に入力してください。",
+        "description": "アカウント {username} の最新パスワードを入力して再認証を行ってください。",
         "data": {
-          "auth_code": "認証コードまたはリダイレクトURL"
+          "username": "携帯電話番号",
+          "password": "パスワード"
         }
       }
     },
     "error": {
-      "cannot_connect": "アムウェイサーバーへの接続またはトークン交換に失敗しました。",
-      "invalid_auth_code": "無効な認証コードまたは URL です。",
+      "cannot_connect": "アムウェイサーバーへの接続に失敗しました。",
+      "invalid_auth": "電話番号またはパスワードが無効です。",
+      "invalid_username": "有効な電話番号を入力してください。",
+      "invalid_password": "パスワードを入力してください。",
+      "no_devices_found": "空気清浄機が見つかりませんでした。公式アプリでペアリングされていることを確認してください。",
       "unknown": "予期しないエラーが発生しました。"
     },
     "abort": {

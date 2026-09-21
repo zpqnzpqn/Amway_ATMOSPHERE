@@ -16,7 +16,6 @@ import voluptuous as vol
 from .api import AmwayApiClient, normalize_username
 from .const import (
     CONF_ACCESS_TOKEN,
-    CONF_AUTH_CODE,
     CONF_COUNTRY,
     CONF_EXPIRES_AT,
     CONF_PARTY_ID,
@@ -52,17 +51,15 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize."""
-        self._auth_url: str = AmwayApiClient.get_authorization_url()
         self._reauth_entry: Optional[config_entries.ConfigEntry] = None
 
     async def async_step_user(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        """Handle initial step: Official OAuth Code, Access Token / JSON, or Phone + Password."""
+        """Handle initial step: Phone + Password direct login."""
         errors: Dict[str, str] = {}
 
         if user_input is not None:
-            raw_auth_code = user_input.get(CONF_AUTH_CODE, "").strip()
             raw_token = user_input.get(CONF_ACCESS_TOKEN, "").strip()
             raw_username = user_input.get(CONF_USERNAME, "").strip()
             password = user_input.get(CONF_PASSWORD, "").strip()
@@ -70,7 +67,7 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             session = async_get_clientsession(self.hass)
 
-            # Option 1: Direct Phone/Username and Password Login (Recommended - Full Healthy Home App Emulation)
+            # Direct Phone/Username and Password Login
             if raw_username and password:
                 try:
                     login_res = await AmwayApiClient.async_login_with_password(
@@ -128,49 +125,7 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     else:
                         errors["base"] = "cannot_connect"
 
-            # Option 2: Official OAuth Code / Redirect URL (Alternative)
-            elif raw_auth_code:
-                auth_code = _extract_code(raw_auth_code)
-                if not auth_code:
-                    errors[CONF_AUTH_CODE] = "invalid_auth_code"
-                else:
-                    try:
-                        tokens = await AmwayApiClient.async_exchange_code(
-                            session, auth_code
-                        )
-                        access_token = tokens["access_token"]
-                        refresh_token = tokens.get("refresh_token")
-                        expires_in = tokens.get("expires_in", 3600)
-                        expires_at = time.time() + expires_in
-
-                        client = AmwayApiClient(
-                            session=session,
-                            access_token=access_token,
-                            refresh_token=refresh_token,
-                            country=country,
-                        )
-                        devices = await client.async_get_devices()
-                        if not devices:
-                            errors["base"] = "no_devices_found"
-                        else:
-                            unique_id = f"amway_atmosphere_{devices[0].thing_id}"
-                            await self.async_set_unique_id(unique_id)
-                            self._abort_if_unique_id_configured()
-
-                            return self.async_create_entry(
-                                title=f"Amway Atmosphere ({devices[0].thing_id})",
-                                data={
-                                    CONF_ACCESS_TOKEN: access_token,
-                                    CONF_REFRESH_TOKEN: refresh_token,
-                                    CONF_COUNTRY: country,
-                                    CONF_EXPIRES_AT: expires_at,
-                                },
-                            )
-                    except Exception as err:
-                        _LOGGER.exception("Failed to authenticate with Amway code: %s", err)
-                        errors["base"] = "invalid_auth_code"
-
-            # Option 3: Direct Access Token or JSON Token Payload (Advanced)
+            # Direct Access Token or JSON Token Payload (for programmatic / testing support)
             elif raw_token:
                 access_token = raw_token
                 refresh_token = None
@@ -213,80 +168,22 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         )
                 except Exception as err:
                     _LOGGER.exception("Failed to connect Amway with provided token: %s", err)
-                    errors[CONF_ACCESS_TOKEN] = "invalid_auth"
+                    errors["base"] = "invalid_auth"
 
             else:
-                errors["base"] = "missing_credentials_or_token"
+                errors["base"] = "invalid_auth"
 
         schema = vol.Schema(
             {
-                vol.Optional(CONF_USERNAME): str,
-                vol.Optional(CONF_PASSWORD): str,
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
                 vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): str,
-                vol.Optional(CONF_AUTH_CODE): str,
-                vol.Optional(CONF_ACCESS_TOKEN): str,
             }
         )
 
         return self.async_show_form(
             step_id="user",
             data_schema=schema,
-            description_placeholders={"auth_url": self._auth_url},
-            errors=errors,
-        )
-
-    async def async_step_manual_code(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> FlowResult:
-        """Fallback step: Authenticate using OAuth redirect code/URL."""
-        errors: Dict[str, str] = {}
-
-        if user_input is not None:
-            raw_code = user_input.get(CONF_AUTH_CODE, "")
-            auth_code = _extract_code(raw_code)
-
-            if not auth_code:
-                errors[CONF_AUTH_CODE] = "invalid_auth_code"
-            else:
-                session = async_get_clientsession(self.hass)
-                try:
-                    tokens = await AmwayApiClient.async_exchange_code(
-                        session, auth_code
-                    )
-                    access_token = tokens["access_token"]
-                    refresh_token = tokens.get("refresh_token")
-                    expires_in = tokens.get("expires_in", 3600)
-                    expires_at = time.time() + expires_in
-
-                    client = AmwayApiClient(session, access_token, refresh_token)
-                    devices = await client.async_get_devices()
-
-                    unique_id = f"amway_atmosphere_{devices[0].thing_id if devices else 'account'}"
-                    await self.async_set_unique_id(unique_id)
-                    self._abort_if_unique_id_configured()
-
-                    return self.async_create_entry(
-                        title="Amway Atmosphere",
-                        data={
-                            CONF_ACCESS_TOKEN: access_token,
-                            CONF_REFRESH_TOKEN: refresh_token,
-                            CONF_EXPIRES_AT: expires_at,
-                        },
-                    )
-                except Exception as err:
-                    _LOGGER.exception("Failed to authenticate with Amway code: %s", err)
-                    errors["base"] = "cannot_connect"
-
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_AUTH_CODE): str,
-            }
-        )
-
-        return self.async_show_form(
-            step_id="manual_code",
-            data_schema=schema,
-            description_placeholders={"auth_url": self._auth_url},
             errors=errors,
         )
 
@@ -306,7 +203,10 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: Dict[str, str] = {}
 
         if user_input is not None and self._reauth_entry:
-            saved_username = self._reauth_entry.data.get(CONF_USERNAME)
+            saved_username = (
+                self._reauth_entry.data.get(CONF_USERNAME)
+                or user_input.get(CONF_USERNAME)
+            )
             password = user_input.get(CONF_PASSWORD)
             country = self._reauth_entry.data.get(CONF_COUNTRY, DEFAULT_COUNTRY)
 
@@ -323,27 +223,18 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         self._reauth_entry,
                         data={
                             **self._reauth_entry.data,
+                            CONF_USERNAME: saved_username,
                             CONF_PASSWORD: password,
                             CONF_ACCESS_TOKEN: login_res["access_token"],
-                            CONF_REFRESH_TOKEN: login_res.get("refresh_token") or self._reauth_entry.data.get(CONF_REFRESH_TOKEN),
+                            CONF_REFRESH_TOKEN: login_res.get("refresh_token")
+                            or self._reauth_entry.data.get(CONF_REFRESH_TOKEN),
                             CONF_EXPIRES_AT: time.time() + login_res.get("expires_in", 3600),
                         },
                     )
+                    await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
+                    return self.async_abort(reason="reauth_successful")
                 else:
-                    raw_code = user_input.get(CONF_AUTH_CODE, "")
-                    auth_code = _extract_code(raw_code)
-                    tokens = await AmwayApiClient.async_exchange_code(session, auth_code)
-                    self.hass.config_entries.async_update_entry(
-                        self._reauth_entry,
-                        data={
-                            **self._reauth_entry.data,
-                            CONF_ACCESS_TOKEN: tokens["access_token"],
-                            CONF_REFRESH_TOKEN: tokens.get("refresh_token"),
-                            CONF_EXPIRES_AT: time.time() + tokens.get("expires_in", 3600),
-                        },
-                    )
-                await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
-                return self.async_abort(reason="reauth_successful")
+                    errors["base"] = "invalid_auth"
             except Exception as err:
                 _LOGGER.exception("Re-auth failed: %s", err)
                 errors["base"] = "cannot_connect"
@@ -360,11 +251,15 @@ class AmwayAtmosphereConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors=errors,
             )
 
-        schema = vol.Schema({vol.Required(CONF_AUTH_CODE): str})
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
+            }
+        )
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=schema,
-            description_placeholders={"auth_url": self._auth_url},
             errors=errors,
         )
 

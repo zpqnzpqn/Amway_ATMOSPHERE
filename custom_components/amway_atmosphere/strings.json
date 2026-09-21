@@ -3,26 +3,18 @@
     "step": {
       "user": {
         "title": "Connect to Amway Atmosphere",
-        "description": "Please enter your registered Amway mobile phone number and password to connect your Atmosphere purifier.\nThe integration emulates the official Healthy Home App to authenticate and obtain permanent tokens automatically.\n\n(If you prefer to enter an official authorization code or existing Access Token, you can also fill the optional fields below)",
+        "description": "Please enter your registered Amway mobile phone number and password to connect your Atmosphere purifier.\nThe integration authenticates directly with Amway cloud servers to discover and control your devices.",
         "data": {
           "username": "Phone Number",
           "password": "Password",
-          "country": "Country Code (Default TW)",
-          "auth_code": "(Optional) Official Authorization Code or URL",
-          "access_token": "(Optional) Access Token or JSON Payload"
-        }
-      },
-      "manual_code": {
-        "title": "Access Token or Authorization Code",
-        "description": "Please paste your existing Access Token or Authorization Code below:",
-        "data": {
-          "auth_code": "Access Token or Code"
+          "country": "Country Code (Default TW)"
         }
       },
       "reauth_confirm": {
         "title": "Re-authenticate Amway Account",
         "description": "Please enter your password to re-authenticate account {username}.",
         "data": {
+          "username": "Phone Number",
           "password": "Password"
         }
       }
@@ -30,10 +22,8 @@
     "error": {
       "cannot_connect": "Failed to connect to Amway cloud servers.",
       "invalid_auth": "Invalid phone number or password. Please verify your credentials.",
-      "invalid_auth_code": "Invalid token or authorization code.",
       "invalid_username": "Please enter a valid phone number.",
       "invalid_password": "Password cannot be empty.",
-      "missing_credentials_or_token": "Please enter Phone Number & Password, Authorization Code, or Access Token.",
       "no_devices_found": "No Atmosphere air purifiers found. Please make sure your purifier is paired in the official Amway Healthy Home App.",
       "unknown": "An unexpected error occurred."
     },
