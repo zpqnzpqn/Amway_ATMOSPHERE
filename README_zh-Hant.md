@@ -136,6 +136,7 @@ template:
 
 # 3. Apple HomeKit 獨立橋接器 (Amway HomeKit Bridge)
 # 說明：建議建立獨立橋接器（如 port 21065）避免與預設 21064 衝突
+# 注意：只需橋接清淨機實體，PM2.5 與濾網壽命透過 linked_* 直接內嵌，避免在家庭 App 生成重複的獨立圖標
 homekit:
   - name: "Amway HomeKit Bridge"
     port: 21065
@@ -143,7 +144,6 @@ homekit:
     filter:
       include_entities:
         - fan.atmosphere_sky
-        - sensor.atmosphere_sky_pm2_5
     entity_config:
       fan.atmosphere_sky:
         type: air_purifier
@@ -153,7 +153,7 @@ homekit:
 
 > 💡 **注意事項與說明**：
 > 1. **實體 ID 替換**：請依您的實際實體名稱（例如 `fan.<your_device_name>`）替換範例中的實體 ID。若使用樣板感測器，請留意 Home Assistant 會自動將包含小數點的名稱（如 `PM2.5`）轉換為底線（如 `sensor.atmosphere_sky_pm2_5`）。
-> 2. **HomeKit 空氣品質圖標**：Apple HomeKit 必須綁定數值型的 `linked_pm25_sensor`，家庭 App 房間頂部才會正常點亮 **圓形「空氣品質：極佳 / 良好」圖標**。
+> 2. **避免重複圖標**：`filter.include_entities` 僅需填寫清淨機本體 `fan.atmosphere_sky`。PM2.5 與最低濾網壽命均已透過 `linked_*` 內嵌於清淨機本體中，家庭 App 房間頂部會正常點亮 **圓形「空氣品質：極佳 / 良好」圖標**，且不會產生多餘的重複獨立圖標。
 > 3. **完整設定指南**：5 項感測器 HomeKit 對應評估表與多層濾網自動連動教學，請參閱 👉 [**Apple HomeKit 完整設定教學**](docs/setup-guide.md#-apple-homekit-完美設定教學-type-air_purifier)
 
 ---

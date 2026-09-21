@@ -68,7 +68,6 @@ homekit:
     filter:
       include_entities:
         - fan.atmosphere_sky
-        - sensor.atmosphere_sky_pm2_5
     entity_config:
       fan.atmosphere_sky:
         type: air_purifier
@@ -76,7 +75,9 @@ homekit:
         linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 **Entity ID Note**: Substitute entity names with your actual `entity_id` (e.g. `fan.<your_device_name>`). Note that Home Assistant converts dots in template sensor names (such as `PM2.5`) to underscores (e.g. `sensor.atmosphere_sky_pm2_5`).
+> 💡 **Entity ID & Configuration Notes**:
+> 1. **Avoid Duplicate Tiles (Important)**: Only list `fan.atmosphere_sky` in `filter.include_entities`. Do **not** add `sensor.atmosphere_sky_pm2_5` under `include_entities`; `linked_pm25_sensor` automatically embeds the air quality service into the air purifier accessory and displays the circular **"Air Quality: Good"** badge at the room header in Apple Home. Adding it separately would produce an unwanted duplicate standalone tile in Apple Home.
+> 2. **Entity Names**: Substitute entity names with your actual `entity_id` (e.g. `fan.<your_device_name>`). Note that Home Assistant converts dots in template sensor names (such as `PM2.5`) to underscores (e.g. `sensor.atmosphere_sky_pm2_5`).
 
 ---
 

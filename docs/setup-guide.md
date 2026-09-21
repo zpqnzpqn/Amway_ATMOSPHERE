@@ -68,7 +68,6 @@ homekit:
     filter:
       include_entities:
         - fan.atmosphere_sky
-        - sensor.atmosphere_sky_pm2_5
     entity_config:
       fan.atmosphere_sky:
         type: air_purifier
@@ -76,7 +75,9 @@ homekit:
         linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 **實體名稱小提示**：請依您的實際實體名稱（例如 `fan.<your_device_name>`）替換範例中的實體 ID。若使用樣板感測器，Home Assistant 會將包含小數點的名稱（如 `PM2.5`）轉換為底線（如 `sensor.atmosphere_sky_pm2_5`）。
+> 💡 **注意事項與實體設定**：
+> 1. **避免重複圖標（重點）**：`filter.include_entities` 僅需填寫清淨機本體 `fan.atmosphere_sky`。請**不要**將 `sensor.atmosphere_sky_pm2_5` 列入 `include_entities`，因為下方的 `linked_pm25_sensor` 已將 PM2.5 服務直接內嵌於清淨機配件中，Apple「家庭」App 會在房間頂部正常顯示圓形「空氣品質：極佳 / 良好」圖標。若重複加入 `include_entities`，將會在家庭 App 產生一個多餘的獨立感測器卡片。
+> 2. **實體名稱替換**：請依您的實際實體名稱（例如 `fan.<your_device_name>`）替換範例中的實體 ID。若使用樣板感測器，Home Assistant 會將包含小數點的名稱（如 `PM2.5`）轉換為底線（如 `sensor.atmosphere_sky_pm2_5`）。
 
 ---
 

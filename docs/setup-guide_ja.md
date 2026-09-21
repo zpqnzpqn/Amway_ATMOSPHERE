@@ -68,7 +68,6 @@ homekit:
     filter:
       include_entities:
         - fan.atmosphere_sky
-        - sensor.atmosphere_sky_pm2_5
     entity_config:
       fan.atmosphere_sky:
         type: air_purifier
@@ -76,7 +75,9 @@ homekit:
         linked_pm25_sensor: sensor.atmosphere_sky_pm2_5
 ```
 
-> 💡 **エンティティ名の注意点**: お使いの環境の実際の `entity_id`（例: `fan.<device_name>`）に置き換えてください。テンプレート名にドット（`PM2.5`）が含まれる場合、Home Assistant はアンダースコア（`sensor.atmosphere_sky_pm2_5`）に変換します。
+> 💡 **注意事項とエンティティ設定**：
+> 1. **重複タイルの防止（重要）**：`filter.include_entities` には空気清浄機本体 `fan.atmosphere_sky` のみを指定してください。`sensor.atmosphere_sky_pm2_5` は `include_entities` に含めないでください。`linked_pm25_sensor` の設定により、PM2.5 サービスは清浄機アクセサリに直接統合され、ホームアプリの部屋上部に円形「空気質：良好」アイコンが表示されます。個別に登録すると重複したセンサーカードが生成されてしまいます。
+> 2. **エンティティ名の置換**: お使いの環境の実際の `entity_id`（例: `fan.<device_name>`）に置き換えてください。テンプレート名にドット（`PM2.5`）が含まれる場合、Home Assistant はアンダースコア（`sensor.atmosphere_sky_pm2_5`）に変換します。
 
 ---
 

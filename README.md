@@ -144,7 +144,6 @@ homekit:
     filter:
       include_entities:
         - fan.atmosphere_sky
-        - sensor.atmosphere_sky_pm2_5
     entity_config:
       fan.atmosphere_sky:
         type: air_purifier
@@ -154,7 +153,7 @@ homekit:
 
 > 💡 **Notes & Guidance**:
 > 1. **Entity IDs**: Replace `fan.atmosphere_sky` and sensor entity names with your actual Home Assistant entity IDs. Note that Home Assistant converts dots in template sensor names (such as `PM2.5`) to underscores (e.g. `sensor.atmosphere_sky_pm2_5`).
-> 2. **Air Quality Badge**: Apple HomeKit requires a numeric `linked_pm25_sensor` to display the circular **"Air Quality: Excellent / Good"** badge in Apple Home.
+> 2. **Avoid Duplicate Tiles**: Only include `fan.atmosphere_sky` in `filter.include_entities`. Do **not** add `sensor.atmosphere_sky_pm2_5` to `include_entities`; `linked_pm25_sensor` automatically embeds the air quality service into the air purifier accessory and displays the circular **"Air Quality: Excellent / Good"** badge at the room header in Apple Home without generating an extra standalone tile.
 > 3. For the complete **5-Sensor HomeKit Compatibility Evaluation Table**, see 👉 [**Setup & HomeKit Guide**](docs/setup-guide_en.md#-apple-homekit-setup-guide-type-air_purifier).
 
 ---
