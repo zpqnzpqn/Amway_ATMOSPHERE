@@ -12,6 +12,10 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
+try:
+    from homeassistant.const import CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+except Exception:
+    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER = "µg/m³"
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -43,8 +47,11 @@ async def async_setup_entry(
         for thing_id, dev in coordinator.data.items():
             if thing_id not in known_thing_ids:
                 known_thing_ids.add(thing_id)
-                # Air Quality Sensor (Levels 1-5 for HomeKit)
+                # Air Quality Sensor (Levels 1-5 qualitative enum)
                 new_entities.append(AmwayAirQualitySensor(coordinator, thing_id))
+
+                # PM2.5 Sensor (Numeric density for Apple HomeKit native Air Quality)
+                new_entities.append(AmwayPM25Sensor(coordinator, thing_id))
 
                 # Clean Air Value Sensor
                 new_entities.append(AmwayCleanAirSensor(coordinator, thing_id))
@@ -180,6 +187,44 @@ class AmwayAirQualitySensor(AmwayAtmosphereSensorBase):
                 "clean_air_val": dev.clean_air_val,
             })
         return attrs
+
+
+# Standard PM2.5 density mappings (µg/m³) based on Apple HomeKit thresholds:
+# Level 1 (Excellent): <= 9.0 µg/m³
+# Level 2 (Good): 10 ~ 35.4 µg/m³
+# Level 3 (Fair): 35.5 ~ 55.4 µg/m³
+# Level 4 (Inferior): 55.5 ~ 125.4 µg/m³
+# Level 5 (Poor): > 125.4 µg/m³
+DUST_LEVEL_TO_PM25: Dict[int, float] = {
+    1: 5.0,
+    2: 18.0,
+    3: 45.0,
+    4: 80.0,
+    5: 150.0,
+}
+
+
+class AmwayPM25Sensor(AmwayAtmosphereSensorBase):
+    """PM2.5 Sensor directly providing numeric density for Apple HomeKit Air Quality accessories."""
+
+    def __init__(
+        self, coordinator: AmwayAtmosphereCoordinator, thing_id: str
+    ) -> None:
+        super().__init__(coordinator, thing_id)
+        self._attr_name = "PM2.5"
+        self._attr_unique_id = f"{thing_id}_pm25"
+        self._attr_device_class = SensorDeviceClass.PM25
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_native_unit_of_measurement = CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+        self._attr_icon = "mdi:air-filter"
+
+    @property
+    def native_value(self) -> Optional[float]:
+        """Return numeric PM2.5 reading."""
+        dev = self._device
+        if not dev or dev.dust_level is None:
+            return None
+        return DUST_LEVEL_TO_PM25.get(dev.dust_level, 18.0)
 
 
 class AmwayCleanAirSensor(AmwayAtmosphereSensorBase):

@@ -589,6 +589,7 @@ class TestAmwayEntities:
             AmwayAirQualitySensor,
             AmwayCleanAirSensor,
             AmwayFilterSensor,
+            AmwayPM25Sensor,
         )
 
         coordinator = MagicMock()
@@ -612,6 +613,10 @@ class TestAmwayEntities:
         aq_sensor = AmwayAirQualitySensor(coordinator, "sky-001")
         assert aq_sensor.native_value == "inferior"
         assert aq_sensor.extra_state_attributes["dust_level"] == 4
+
+        pm25_sensor = AmwayPM25Sensor(coordinator, "sky-001")
+        assert pm25_sensor.native_value == 80.0
+        assert pm25_sensor._attr_unique_id == "sky-001_pm25"
 
         clean_sensor = AmwayCleanAirSensor(coordinator, "sky-001")
         assert clean_sensor.native_value == 420
