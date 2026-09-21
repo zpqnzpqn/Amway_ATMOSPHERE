@@ -25,7 +25,7 @@
 > - Atmosphere Sky（5段階風量、3層フィルター、ターボモード）および Atmosphere Mini（3段階風量、2-in-1 フィルター）に完全対応。
 > - 空気清浄機本体（Fan エンティティ）にプリセットモード（自動、夜間、ターボ）を統合し、不要なスイッチを自動クリーンアップ。
 > - デバイスの実機シリアル番号（`thing_id`）およびファームウェアバージョンを Apple HomeKit のアクセサリ情報へ自動同期。
-> - 詳細なセットアップ手順については 👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide.md) をご参照ください。
+> - 詳細なセットアップ手順については 👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide_ja.md) をご参照ください。
 
 ---
 
@@ -113,7 +113,7 @@ homekit:
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
 ```
 
-> 💡 5大センサーの HomeKit 対応状況および3層フィルターの自動最小寿命算出テンプレートについては、👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide.md#-apple-homekit-完美設定教學-type-air_purifier) をご参照ください。
+> 💡 5大センサーの HomeKit 対応状況および3層フィルターの自動最小寿命算出テンプレートについては、👉 [**セットアップ・HomeKit ガイド**](docs/setup-guide_ja.md#-apple-homekit-設定ガイド-type-air_purifier) をご参照ください。
 
 ---
 

@@ -25,7 +25,7 @@ An official-grade Home Assistant custom integration for **Amway Atmosphere Sky**
 > - **Full Model Support**: Supports Atmosphere Sky (5 discrete speed steps, 3 filter stages, Turbo mode) and Atmosphere Mini (3 speed steps, 2-in-1 filter).
 > - **Unified Fan Entity**: Preset modes (`Auto`, `Night`, `Turbo`) are built directly into the purifier entity, with automatic pruning of legacy redundant switches.
 > - **HomeKit Serial Number Sync**: Automatically maps physical device serial number (`thing_id`) and firmware/hardware revisions to Apple HomeKit `AccessoryInformation`.
-> - For detailed setup and HomeKit bridging, see the 👉 [**Setup & HomeKit Guide**](docs/setup-guide.md).
+> - For detailed setup and HomeKit bridging, see the 👉 [**Setup & HomeKit Guide**](docs/setup-guide_en.md).
 
 ---
 
@@ -113,7 +113,7 @@ homekit:
         linked_filter_life_level_sensor: sensor.atmosphere_sky_lowest_filter_life
 ```
 
-> 💡 For the complete **5-Sensor HomeKit Compatibility Evaluation Table** and multi-stage lowest filter life template sensor, see 👉 [**Setup & HomeKit Guide**](docs/setup-guide.md#-apple-homekit-完美設定教學-type-air_purifier).
+> 💡 For the complete **5-Sensor HomeKit Compatibility Evaluation Table** and multi-stage lowest filter life template sensor, see 👉 [**Setup & HomeKit Guide**](docs/setup-guide_en.md#-apple-homekit-setup-guide-type-air_purifier).
 
 ---
 

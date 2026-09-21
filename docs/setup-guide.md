@@ -1,5 +1,11 @@
 # 安麗逸新空氣清淨機 (Amway Atmosphere) Home Assistant 連線與 HomeKit 設定指南
 
+<p align="center">
+  <a href="setup-guide_en.md"><b>English</b></a> |
+  <a href="setup-guide.md"><b>繁體中文</b></a> |
+  <a href="setup-guide_ja.md"><b>日本語</b></a>
+</p>
+
 > 🚀 **v1.0.0 首發正式版發行說明 (General Availability)**  
 > 本指南專為所有 Home Assistant 與 Apple HomeKit 使用者設計，協助您快速完成安麗 Atmosphere Sky / Mini 空氣清淨機的綁定與啟用。  
 > 本版本具備手機密碼直接登入、AWS IoT Shadow 雲端即時雙向控制、HomeKit 原生空氣清淨機與 5 級空氣品質評級對應、實體機身序號同步等完整旗艦功能。
