@@ -59,6 +59,8 @@
    - **卡片 2**：室內空氣品質等級儀表與狀態指示。
    您可以隨意將它們移動或釘選至常用配件與各個房間。
 
+> 🍏 **進階 HomeKit 設定與感測器評估**：包含 5 項感測器 HomeKit 對應評估表、YAML 設定範例與三層濾網自動取最低壽命綁定教學，請參閱 👉 [**Apple HomeKit 完整設定教學**](docs/setup-guide.md#-apple-homekit-完美設定教學-type-air_purifier)
+
 ---
 
 ## 📦 安裝步驟 (Installation)

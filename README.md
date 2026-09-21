@@ -59,6 +59,8 @@ When synced to Apple Home via Home Assistant's **HomeKit Bridge**, the purifier 
    - **Tile 2**: Indoor Air Quality rating (Excellent / Good / Fair / Inferior / Poor) and gauge.
    You can move or pin each card to different rooms and favorites.
 
+> 🍏 **Advanced HomeKit Guide & Sensor Mapping**: For the 5-sensor HomeKit compatibility evaluation table, sample YAML configs, and multi-filter lowest-life binding, see 👉 [**Apple HomeKit Setup Guide**](docs/setup-guide.md#-apple-homekit-完美設定教學-type-air_purifier)
+
 ---
 
 ## 📦 Installation
