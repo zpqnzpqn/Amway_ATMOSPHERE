@@ -55,17 +55,6 @@
           }
         }
       }
-    },
-    "switch": {
-      "auto_mode": {
-        "name": "自動モード"
-      },
-      "night_mode": {
-        "name": "夜間モード"
-      },
-      "turbo_mode": {
-        "name": "ターボモード"
-      }
     }
   }
 }

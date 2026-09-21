@@ -55,17 +55,6 @@
           }
         }
       }
-    },
-    "switch": {
-      "auto_mode": {
-        "name": "Auto Mode"
-      },
-      "night_mode": {
-        "name": "Night Mode"
-      },
-      "turbo_mode": {
-        "name": "Turbo Mode"
-      }
     }
   }
 }

@@ -26,7 +26,7 @@ from .coordinator import AmwayAtmosphereCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: List[str] = ["fan", "sensor", "switch"]
+PLATFORMS: List[str] = ["fan", "sensor"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -60,6 +60,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
+
+    # Prune obsolete switch entities from entity registry (Auto/Night/Turbo mode switches now handled natively in fan entity)
+    try:
+        from homeassistant.helpers import entity_registry as er
+
+        ent_reg = er.async_get(hass)
+        for entity_entry in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+            if entity_entry.domain == "switch":
+                ent_reg.async_remove(entity_entry.entity_id)
+    except Exception as err:
+        _LOGGER.debug("Could not prune obsolete switch entities: %s", err)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

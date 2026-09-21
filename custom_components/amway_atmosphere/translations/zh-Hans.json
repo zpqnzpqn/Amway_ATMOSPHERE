@@ -55,17 +55,6 @@
           }
         }
       }
-    },
-    "switch": {
-      "auto_mode": {
-        "name": "自动模式"
-      },
-      "night_mode": {
-        "name": "夜间模式"
-      },
-      "turbo_mode": {
-        "name": "强效 (Turbo)"
-      }
     }
   }
 }

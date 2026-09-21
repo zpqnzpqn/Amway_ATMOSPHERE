@@ -45,9 +45,6 @@ homekit:
     filter:
       include_entities:
         - fan.atmosphere_sky_air_treatment_system
-        - switch.atmosphere_sky_air_treatment_system_auto_mode
-        - switch.atmosphere_sky_air_treatment_system_night_mode
-        - switch.atmosphere_sky_air_treatment_system_turbo_mode
         - sensor.atmosphere_sky_air_treatment_system_air_quality
         - sensor.atmosphere_sky_air_treatment_system_hepa_filter_life
     entity_config:
@@ -57,9 +54,9 @@ homekit:
 
 ### 2. 功能特點
 * **Apple 原生空氣清淨機圖標**：不再顯示為電風扇，具備專屬淨化器動畫與自動/手動切換開關。
-* **三開關嚴格互鎖**：`Auto Mode`、`Night Mode`、`Turbo Mode` 開關具備單選互鎖特性。手動調整風速滑桿時，三個開關自動全部彈回關閉 (OFF)。
+* **原生 Preset Mode 整合**：`Auto`、`Night`、`Turbo` 模式直接內建於清淨機控制項中，無需額外建立獨立開關。
 * **Siri 語音極致聲控**：可直接使用 Siri 控制：
-  * *「嘿 Siri，打開空氣清淨機的夜間模式」*
+  * *「嘿 Siri，將空氣清淨機設為自動模式」*
   * *「嘿 Siri，將空氣清淨機風速設為 60%」*
 * **感測器獨立分類**：空氣品質（1~5級）與濾網壽命可在 HomeKit 作為獨立配件顯示於家庭 App 的「環境」與設備面板中。
 

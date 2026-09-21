@@ -868,115 +868,58 @@ class TestDirectAuthClient:
         assert len(ip.split(".")) == 4
 
 
-class TestAmwayModeSwitches:
-    """Test Auto, Night, and Turbo mode switches with mutual locking."""
+class TestAmwayPlatformsAndPruning:
+    """Test that switch platform is removed and obsolete switch entities are pruned."""
 
-    def test_sky_mode_switches_lifecycle(self):
-        """Test dedicated Auto, Night, and Turbo switches for Atmosphere Sky."""
+    def test_platforms_only_contains_fan_and_sensor(self):
+        """Verify PLATFORMS only forwards fan and sensor, not switch."""
+        from custom_components.amway_atmosphere import PLATFORMS
+
+        assert "fan" in PLATFORMS
+        assert "sensor" in PLATFORMS
+        assert "switch" not in PLATFORMS
+
+    def test_async_setup_entry_prunes_obsolete_switch_entities(self):
+        """Verify async_setup_entry prunes any obsolete switch entities in entity_registry."""
         import asyncio
-        from unittest.mock import AsyncMock, MagicMock
-        from custom_components.amway_atmosphere.api import AtmosphereDeviceState, MODEL_SKY
-        from custom_components.amway_atmosphere.switch import (
-            AmwayAutoModeSwitch,
-            AmwayNightModeSwitch,
-            AmwayTurboModeSwitch,
-        )
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from custom_components.amway_atmosphere import async_setup_entry
 
         async def _run():
-            coordinator = MagicMock()
-            dev = AtmosphereDeviceState(
-                thing_id="sky-001",
-                thing_type=MODEL_SKY,
-                device_name="Atmosphere Sky™ Air Treatment System",
-                speed=1,
-                mode=1,  # 1 = Auto
-            )
-            coordinator.data = {"sky-001": dev}
-            coordinator.async_send_remote_button = AsyncMock()
+            hass = MagicMock()
+            hass.config_entries.async_forward_entry_setups = AsyncMock()
+            entry = MagicMock()
+            entry.entry_id = "test_entry_123"
+            entry.data = {
+                "access_token": "test_token",
+                "refresh_token": "test_refresh",
+            }
+            entry.options = {}
 
-            sw_auto = AmwayAutoModeSwitch(coordinator, "sky-001")
-            sw_night = AmwayNightModeSwitch(coordinator, "sky-001")
-            sw_turbo = AmwayTurboModeSwitch(coordinator, "sky-001")
+            # Mock entity registry with a switch entity and a fan entity
+            mock_switch_entity = MagicMock()
+            mock_switch_entity.domain = "switch"
+            mock_switch_entity.entity_id = "switch.atmosphere_sky_auto_mode"
 
-            # 1. Device info check
-            assert sw_auto.device_info["name"] == "sky-001"
-            assert sw_auto.device_info["model"] == "Atmosphere Sky™ Air Treatment System"
-            assert sw_auto.device_info["serial_number"] == "sky-001"
+            mock_fan_entity = MagicMock()
+            mock_fan_entity.domain = "fan"
+            mock_fan_entity.entity_id = "fan.atmosphere_sky"
 
-            # 2. Initial state: Auto is ON, Night and Turbo are OFF
-            assert sw_auto.is_on is True
-            assert sw_night.is_on is False
-            assert sw_turbo.is_on is False
+            mock_ent_reg = MagicMock()
+            with patch(
+                "homeassistant.helpers.entity_registry.async_get",
+                return_value=mock_ent_reg,
+            ), patch(
+                "homeassistant.helpers.entity_registry.async_entries_for_config_entry",
+                return_value=[mock_switch_entity, mock_fan_entity],
+            ), patch(
+                "custom_components.amway_atmosphere.coordinator.AmwayAtmosphereCoordinator.async_config_entry_first_refresh",
+                new=AsyncMock(),
+            ):
+                await async_setup_entry(hass, entry)
 
-            # 3. Turn on Night mode
-            await sw_night.async_turn_on()
-            coordinator.async_send_remote_button.assert_called_with("sky-001", "Night")
-
-            # Update reported mode to Night (mode=2)
-            dev.mode = 2
-            assert sw_auto.is_on is False
-            assert sw_night.is_on is True
-            assert sw_turbo.is_on is False
-
-            # 4. Turn on Turbo mode
-            coordinator.async_send_remote_button.reset_mock()
-            await sw_turbo.async_turn_on()
-            coordinator.async_send_remote_button.assert_called_with("sky-001", "Turbo")
-
-            # Update reported mode to Turbo (mode=3)
-            dev.mode = 3
-            assert sw_auto.is_on is False
-            assert sw_night.is_on is False
-            assert sw_turbo.is_on is True
-
-            # 5. Manual speed adjustment (reverting mode to 0): All 3 switches are OFF
-            dev.mode = 0
-            dev.speed = 3
-            assert sw_auto.is_on is False
-            assert sw_night.is_on is False
-            assert sw_turbo.is_on is False
-
-        asyncio.run(_run())
-
-    def test_mini_mode_switches(self):
-        import asyncio
-        from unittest.mock import AsyncMock, MagicMock
-        from custom_components.amway_atmosphere.switch import (
-            AmwayAutoModeSwitch,
-            AmwayNightModeSwitch,
-            AmwayTurboModeSwitch,
-        )
-
-        async def _run():
-            coordinator = MagicMock()
-            dev = AtmosphereDeviceState(
-                thing_id="mini-001",
-                thing_type=MODEL_MINI,
-                device_name="Atmosphere Mini™ Air Treatment System",
-                connected=True,
-                speed=1,
-                dust_level=1,
-                mode=2,  # Night mode
-                clean_air_val=100,
-                prefilter_life_left=90,
-                hepa_life_left=95,
-                carbon_life_left=None,
-                child_lock=False,
-                raw_shadow={},
-            )
-            coordinator.data = {"mini-001": dev}
-            coordinator.async_send_remote_button = AsyncMock()
-
-            sw_auto = AmwayAutoModeSwitch(coordinator, "mini-001")
-            sw_night = AmwayNightModeSwitch(coordinator, "mini-001")
-            sw_turbo = AmwayTurboModeSwitch(coordinator, "mini-001")
-
-            assert sw_auto.is_on is False
-            assert sw_night.is_on is True
-            # Turbo is always False on Mini and raises error if turned on
-            assert sw_turbo.is_on is False
-            with pytest.raises(ValueError):
-                await sw_turbo.async_turn_on()
+                # Prune should remove switch entity but NOT fan entity
+                mock_ent_reg.async_remove.assert_called_once_with("switch.atmosphere_sky_auto_mode")
 
         asyncio.run(_run())
 
@@ -1200,12 +1143,11 @@ class TestAmwayAuthAndTokenLifecycle:
         print_banner("plain-string-token")
 
     def test_device_info_name_strictly_uses_thing_id(self):
-        """Verify that HA device name uses thing_id strictly for Fan, Sensor, and Switch."""
+        """Verify that HA device name uses thing_id strictly for Fan and Sensor."""
         from unittest.mock import MagicMock
         from custom_components.amway_atmosphere.api import AtmosphereDeviceState, MODEL_SKY
         from custom_components.amway_atmosphere.fan import AmwayAtmosphereFan
         from custom_components.amway_atmosphere.sensor import AmwayAirQualitySensor
-        from custom_components.amway_atmosphere.switch import AmwayAutoModeSwitch
 
         coordinator = MagicMock()
         dev = AtmosphereDeviceState(
@@ -1217,11 +1159,9 @@ class TestAmwayAuthAndTokenLifecycle:
 
         fan = AmwayAtmosphereFan(coordinator, "23342A03013613BAB")
         sensor = AmwayAirQualitySensor(coordinator, "23342A03013613BAB")
-        switch = AmwayAutoModeSwitch(coordinator, "23342A03013613BAB")
 
         assert fan.device_info["name"] == "23342A03013613BAB"
         assert sensor.device_info["name"] == "23342A03013613BAB"
-        assert switch.device_info["name"] == "23342A03013613BAB"
 
 
 

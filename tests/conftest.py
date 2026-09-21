@@ -33,6 +33,9 @@ class MockDataUpdateCoordinator(MockGeneric):
     def __init__(self, *args, **kwargs):
         pass
 
+    async def async_config_entry_first_refresh(self):
+        pass
+
 
 class MockFanEntity(MockGeneric, MockEntity):
     """Mock FanEntity."""
@@ -85,7 +88,14 @@ config_entries_mod.ConfigFlow = MockConfigFlow
 ha.config_entries = config_entries_mod
 sys.modules["homeassistant.config_entries"] = config_entries_mod
 sys.modules["homeassistant.data_entry_flow"] = MagicMock()
-sys.modules["homeassistant.helpers"] = MagicMock()
+helpers_mod = MagicMock()
+sys.modules["homeassistant.helpers"] = helpers_mod
+ha.helpers = helpers_mod
+
+er_mod = MagicMock()
+helpers_mod.entity_registry = er_mod
+sys.modules["homeassistant.helpers.entity_registry"] = er_mod
+
 sys.modules["homeassistant.helpers.aiohttp_client"] = MagicMock()
 entity_mod = MagicMock()
 entity_mod.DeviceInfo = dict
